@@ -1,0 +1,27 @@
+# Virtual environment
+eeg_bci_env/
+
+# Large data files (re-downloadable from PhysioNet)
+eeg_data/epochs_*.fif
+eeg_data/raw_*.fif
+
+# Trained model binaries (reproducible by running the pipeline)
+eeg_data/models/*.joblib
+
+# Claude Code local settings
+.claude/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
