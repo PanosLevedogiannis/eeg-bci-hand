@@ -494,12 +494,10 @@ class BaselineScreen(Screen):
 
     def __init__(self, app):
         super().__init__(app)
-        self.phase   = self.PHASE_EYES_OPEN
-        self.elapsed = 0.0
-        self.log     = {}
-        push_marker(self.app.lsl_outlet, LSL_MARKERS["baseline_eyes_open_start"])
-        self.log["eyes_open_start_unix"] = time.time()
-        print("  Baseline: eyes open started")
+        self.phase        = self.PHASE_EYES_OPEN
+        self.elapsed      = 0.0
+        self.log          = {}
+        self.marker_sent  = False   # marker fires after first blank frame renders
 
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -530,6 +528,14 @@ class BaselineScreen(Screen):
         s = self.surf
         s.fill(C["bg"])
         W, H = self.W, self.H
+
+        # Send marker AFTER first frame is drawn — screen is visible before marker fires
+        if not self.marker_sent:
+            pygame.display.flip()   # ensure frame is on screen
+            push_marker(self.app.lsl_outlet, LSL_MARKERS["baseline_eyes_open_start"])
+            self.log["eyes_open_start_unix"] = time.time()
+            self.marker_sent = True
+            print("  Baseline: eyes open started")
 
         draw_text(s, "BASELINE RECORDING", self.app.font_heading, C["accent_cyan"], W//2, H//2 - 180)
         pygame.draw.line(s, C["border"], (W//2 - 260, H//2 - 148), (W//2 + 260, H//2 - 148), 1)
@@ -729,8 +735,11 @@ class SessionScreen(Screen):
         dur = self.phase_duration()
         self.phase_bar.value = min(1.0, self.phase_elapsed / dur)
 
-        # Play beep at start of PREPARE phase (warns subject cue is coming)
-        if self.phase == self.PHASE_PREPARE and not self.beep_played and self.phase_elapsed < 0.1:
+        # Play beep 500ms before cue onset (i.e. at t_prepare - 0.5s into PREPARE)
+        # This avoids auditory ERP overlap with the MI imagery window
+        beep_trigger = CFG.t_prepare - 0.5
+        if (self.phase == self.PHASE_PREPARE and not self.beep_played
+                and self.phase_elapsed >= beep_trigger):
             self.app.beep.play()
             self.beep_played = True
 
