@@ -50,6 +50,16 @@ except ImportError:
     HAS_LSL = False
     print("⚠ pylsl not found — LSL markers disabled. Install with: pip install pylsl")
 
+try:
+    from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
+    HAS_BRAINFLOW = True
+except ImportError:
+    HAS_BRAINFLOW = False
+    print("⚠ brainflow not found — EEG recording disabled. Install with: pip install brainflow")
+
+import threading
+import csv
+
 # ─────────────────────────────────────────────
 #  CONFIGURATION
 # ─────────────────────────────────────────────
@@ -58,14 +68,14 @@ except ImportError:
 class SessionConfig:
     subject_id:       str   = "S01"
     trials_per_class: int   = 20          # 20 MI + 20 REST per run
-    n_runs:           int   = 4           # 4 runs × 40 trials = 160 total
+    n_runs:           int   = 1           # 1 run × 40 trials = 40 total
     classes:          List[str] = field(default_factory=lambda: ["MI", "REST"])
 
     # Timing (seconds) — Graz-BCI protocol
     t_rest_min:  float = 1.5   # jittered rest (prevents CNV anticipatory potentials)
     t_rest_max:  float = 2.5
     t_prepare:   float = 2.0   # fixation cross — focus
-    t_cue:       float = 1.25  # brief cue, then disappears (Graz standard)
+    t_cue:       float = 2.25  # brief cue, then disappears (Graz standard)
     t_imagery:   float = 4.0   # motor imagery window — fixation cross only
     t_feedback:  float = 1.5   # blink freely
 
@@ -73,8 +83,8 @@ class SessionConfig:
     t_break_min: float = 60.0  # seconds (subject presses SPACE when ready)
 
     # Baseline at session start
-    t_baseline_eyes_open:  float = 120.0  # 2 minutes
-    t_baseline_eyes_closed: float = 60.0  # 1 minute
+    t_baseline_eyes_open:  float = 30.0
+    t_baseline_eyes_closed: float = 30.0
 
     # Beep (played before cue)
     beep_freq:   int   = 1000   # Hz
@@ -86,6 +96,10 @@ class SessionConfig:
     fps:         int = 60
 
     output_dir:  str = "eeg_data"
+
+    # BrainFlow / Cyton
+    cyton_port:  str = "/dev/cu.usbserial-DQ007OFI"
+    simulate:    bool = False   # True = synthetic board (no hardware needed)
 
 
 CFG = SessionConfig()
@@ -143,9 +157,170 @@ def create_lsl_outlet():
     print("✓ LSL marker stream created: EEG_BCI_Markers")
     return outlet
 
+_active_recorder = None   # set when EEGRecorder starts
+
 def push_marker(outlet, code: int):
     if outlet is not None:
         outlet.push_sample([code])
+    if _active_recorder is not None:
+        _active_recorder.log_marker(code)
+
+# ─────────────────────────────────────────────
+#  EEG RECORDER (BrainFlow)
+# ─────────────────────────────────────────────
+
+class EEGRecorder:
+    """
+    Connects to OpenBCI Cyton via BrainFlow and records all EEG samples
+    in a background thread. Saves an OpenBCI-compatible CSV on stop().
+    """
+    SFREQ = 250
+
+    def __init__(self, port: str, simulate: bool = False):
+        if not HAS_BRAINFLOW:
+            self.board = None
+            print("⚠ BrainFlow not available — EEG not recorded")
+            return
+
+        BoardShim.disable_board_logger()
+        params = BrainFlowInputParams()
+
+        if simulate:
+            board_id = BoardIds.SYNTHETIC_BOARD.value
+            print("  [BrainFlow] Synthetic board (no hardware)")
+        else:
+            board_id = BoardIds.CYTON_BOARD.value
+            params.serial_port = port
+
+        self.board        = BoardShim(board_id, params)
+        self.eeg_channels = BoardShim.get_eeg_channels(board_id)
+        self.all_data     = []
+        self._running     = False
+        self._thread      = None
+
+        self._markers = []   # list of (unix_time, code)
+
+        self.board.prepare_session()
+        self.board.start_stream()
+        print(f"  ✓ BrainFlow streaming — {len(self.eeg_channels)} EEG ch @ {self.SFREQ} Hz")
+
+    def log_marker(self, code: int):
+        self._markers.append((time.time(), code))
+
+    def start(self):
+        if self.board is None:
+            return
+        global _active_recorder
+        _active_recorder = self
+        self._running = True
+        self._thread  = threading.Thread(target=self._record_loop, daemon=True)
+        self._thread.start()
+
+    def _record_loop(self):
+        while self._running:
+            data = self.board.get_board_data()
+            if data.shape[1] > 0:
+                self.all_data.append(data)
+            time.sleep(0.04)   # ~25 Hz poll
+
+    def stop(self, subject_id: str, output_dir: str) -> str | None:
+        if self.board is None:
+            return None
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=2)
+        # Drain remaining buffer
+        data = self.board.get_board_data()
+        if data.shape[1] > 0:
+            self.all_data.append(data)
+        try:
+            self.board.stop_stream()
+            self.board.release_session()
+        except Exception:
+            pass
+
+        if not self.all_data:
+            print("  ⚠ No EEG data collected")
+            return None
+
+        import numpy as np
+        all_data = np.concatenate(self.all_data, axis=1)
+        return self._save_csv(all_data, subject_id, output_dir)
+
+    def _save_csv(self, data, subject_id: str, output_dir: str) -> str:
+        import numpy as np
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fname = os.path.join(output_dir, f"EEG-RAW_{subject_id}_{timestamp}.csv")
+
+        n_samples  = data.shape[1]
+        timestamps = data[-2] if data.shape[0] > 2 else np.arange(n_samples) / self.SFREQ
+
+        # Build marker column: align each marker to nearest sample by timestamp
+        marker_col = np.zeros(n_samples, dtype=int)
+        half_sample = 0.5 / self.SFREQ
+        for marker_time, code in self._markers:
+            diffs = np.abs(timestamps - marker_time)
+            idx   = int(np.argmin(diffs))
+            if diffs[idx] < half_sample * 20:   # within 20 samples tolerance
+                marker_col[idx] = code
+
+        with open(fname, "w", newline="") as f:
+            f.write("%OpenBCI Raw EXG Data\n")
+            f.write(f"%Number of channels = {len(self.eeg_channels)}\n")
+            f.write(f"%Sample Rate = {self.SFREQ} Hz\n")
+            f.write(f"%Subject = {subject_id}\n")
+            header = (["Sample Index"] +
+                      [f"EXG Channel {i}" for i in range(len(self.eeg_channels))] +
+                      ["Timestamp", "Marker"])
+            writer = csv.writer(f)
+            writer.writerow(header)
+            for i in range(n_samples):
+                row = ([i] +
+                       [f"{data[ch, i]:.6f}" for ch in self.eeg_channels] +
+                       [f"{timestamps[i]:.6f}", marker_col[i]])
+                writer.writerow(row)
+
+        print(f"  ✓ EEG saved → {fname}  ({n_samples} samples, {len(self._markers)} markers)")
+        self._save_fif(data, timestamps, subject_id, output_dir)
+        return fname
+
+    def _save_fif(self, data, timestamps, subject_id: str, output_dir: str):
+        try:
+            import mne
+            import numpy as np
+        except ImportError:
+            print("  ⚠ mne not installed — skipping FIF save")
+            return
+
+        ch_names = ["C3", "C4", "FC3", "FC4", "CP3", "CP4", "Cz", "FCz"]
+        n_ch     = len(self.eeg_channels)
+        ch_names = ch_names[:n_ch]
+
+        eeg_data = data[self.eeg_channels, :] * 1e-6   # µV → V for MNE
+
+        info = mne.create_info(
+            ch_names = ch_names,
+            sfreq    = self.SFREQ,
+            ch_types = "eeg",
+        )
+        info.set_montage("standard_1020", on_missing="ignore", verbose=False)
+
+        raw = mne.io.RawArray(eeg_data, info, verbose=False)
+
+        # Add markers as annotations
+        if self._markers and len(timestamps) > 0:
+            t0 = timestamps[0]
+            onsets      = [t - t0 for t, _ in self._markers]
+            durations   = [0.0]   * len(self._markers)
+            descriptions= [str(c) for _, c in self._markers]
+            raw.set_annotations(mne.Annotations(onsets, durations, descriptions))
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fif_path  = os.path.join(output_dir, f"EEG-RAW_{subject_id}_{timestamp}_raw.fif")
+        raw.save(fif_path, overwrite=True, verbose=False)
+        print(f"  ✓ FIF saved  → {fif_path}")
+
 
 # ─────────────────────────────────────────────
 #  BEEP GENERATOR
@@ -519,6 +694,7 @@ class BaselineScreen(Screen):
             elif self.phase == self.PHASE_EYES_CLOSED:
                 push_marker(self.app.lsl_outlet, LSL_MARKERS["baseline_eyes_closed_end"])
                 self.log["eyes_closed_end_unix"] = time.time()
+                self.app.beep.play()
                 self.phase = self.PHASE_DONE
                 print("  Baseline complete")
                 self.app.session_log.baseline = self.log
@@ -735,13 +911,7 @@ class SessionScreen(Screen):
         dur = self.phase_duration()
         self.phase_bar.value = min(1.0, self.phase_elapsed / dur)
 
-        # Play beep 500ms before cue onset (i.e. at t_prepare - 0.5s into PREPARE)
-        # This avoids auditory ERP overlap with the MI imagery window
-        beep_trigger = CFG.t_prepare - 0.5
-        if (self.phase == self.PHASE_PREPARE and not self.beep_played
-                and self.phase_elapsed >= beep_trigger):
-            self.app.beep.play()
-            self.beep_played = True
+        pass  # beep only at end of baseline eyes closed
 
         if self.phase_elapsed >= dur:
             self.next_phase()
@@ -798,12 +968,8 @@ class SessionScreen(Screen):
             draw_fixation_cross(s, W//2, H//2, size=45, thick=7, color=C["white"])
 
         elif self.phase == self.PHASE_CUE:
-            # Brief cue — label + fixation cross
             col = C["accent_mi"] if label == "MI" else C["accent_rest"]
-            draw_fixation_cross(s, W//2, H//2, size=45, thick=7, color=C["dim"])
-            draw_text(s, label, self.app.font_cue, col, W//2, H//2 - 80)
-            sub = "Imagine closing your fist" if label == "MI" else "Relax completely"
-            draw_text(s, sub, self.app.font_body, C["grey"], W//2, H//2 + 20)
+            draw_text(s, label, self.app.font_cue, col, W//2, H//2)
 
         elif self.phase == self.PHASE_IMAGERY:
             # FIXATION CROSS ONLY — no hand icons, no label (prevents visual ERPs)
@@ -941,6 +1107,9 @@ class App:
         self.lsl_outlet  = create_lsl_outlet()
         self.current_run = 1
 
+        self.recorder = EEGRecorder(CFG.cyton_port, simulate=CFG.simulate)
+        self.recorder.start()
+
         self.session_log = SessionLog(
             subject_id = CFG.subject_id,
             date       = datetime.now().strftime("%Y-%m-%d"),
@@ -999,6 +1168,7 @@ class App:
             pygame.display.flip()
 
         pygame.quit()
+        self.recorder.stop(CFG.subject_id, CFG.output_dir)
         print("\nParadigm closed.")
 
 # ─────────────────────────────────────────────

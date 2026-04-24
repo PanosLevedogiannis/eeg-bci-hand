@@ -46,7 +46,7 @@ except ImportError:
 
 MODEL_DIR    = os.path.join(DATA_DIR, "models")
 ARDUINO_PORT = "/dev/cu.usbmodem1101"
-CYTON_PORT   = "/dev/cu.usbserial-YYYY"
+CYTON_PORT   = "/dev/cu.usbserial-DQ007OFI"
 SUBJECT_ID   = "P001"
 
 SFREQ        = 250
