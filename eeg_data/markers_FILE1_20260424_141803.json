@@ -1,0 +1,484 @@
+{
+  "subject_id": "S01",
+  "date": "2026-04-24",
+  "start_time": "14:08:29",
+  "task": "MI_vs_REST",
+  "config": {
+    "subject_id": "S01",
+    "trials_per_class": 20,
+    "n_runs": 1,
+    "classes": [
+      "MI",
+      "REST"
+    ],
+    "t_rest_min": 1.5,
+    "t_rest_max": 2.5,
+    "t_prepare": 2.0,
+    "t_cue": 2.25,
+    "t_imagery": 4.0,
+    "t_feedback": 1.5,
+    "t_break_min": 60.0,
+    "t_baseline_eyes_open": 30.0,
+    "t_baseline_eyes_closed": 30.0,
+    "beep_freq": 1000,
+    "beep_dur_ms": 70,
+    "screen_w": 1280,
+    "screen_h": 800,
+    "fps": 60,
+    "output_dir": "eeg_data",
+    "cyton_port": "/dev/cu.usbserial-DQ007OFI",
+    "simulate": false
+  },
+  "baseline": {
+    "eyes_open_start_unix": 1777028951.32953,
+    "eyes_open_end_unix": 1777028981.320809,
+    "eyes_closed_start_unix": 1777028981.320811,
+    "eyes_closed_end_unix": 1777029011.325154
+  },
+  "trials": [
+    {
+      "trial_number": 1,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 5.929823875427246,
+      "onset_unix": 1777029017.255093,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 5.929825067520142
+      }
+    },
+    {
+      "trial_number": 2,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 18.02342391014099,
+      "onset_unix": 1777029029.348692,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 18.023424863815308
+      }
+    },
+    {
+      "trial_number": 3,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 30.21364974975586,
+      "onset_unix": 1777029041.5389178,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 30.21364974975586
+      }
+    },
+    {
+      "trial_number": 4,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 42.468940019607544,
+      "onset_unix": 1777029053.794208,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 42.46894097328186
+      }
+    },
+    {
+      "trial_number": 5,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 54.60295915603638,
+      "onset_unix": 1777029065.9282272,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 54.60295915603638
+      }
+    },
+    {
+      "trial_number": 6,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 66.36773610115051,
+      "onset_unix": 1777029077.6930041,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 66.36773610115051
+      }
+    },
+    {
+      "trial_number": 7,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 77.6967830657959,
+      "onset_unix": 1777029089.022051,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 77.69678401947021
+      }
+    },
+    {
+      "trial_number": 8,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 89.66397309303284,
+      "onset_unix": 1777029100.9892411,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 89.66397309303284
+      }
+    },
+    {
+      "trial_number": 9,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 101.00877094268799,
+      "onset_unix": 1777029112.334039,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 101.00877094268799
+      }
+    },
+    {
+      "trial_number": 10,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 113.08154892921448,
+      "onset_unix": 1777029124.4068182,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 113.08155012130737
+      }
+    },
+    {
+      "trial_number": 11,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 124.81298995018005,
+      "onset_unix": 1777029136.138258,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 124.81298995018005
+      }
+    },
+    {
+      "trial_number": 12,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 136.35998797416687,
+      "onset_unix": 1777029147.685256,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 136.3599889278412
+      }
+    },
+    {
+      "trial_number": 13,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 148.28298687934875,
+      "onset_unix": 1777029159.608255,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 148.28298687934875
+      }
+    },
+    {
+      "trial_number": 14,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 160.2560739517212,
+      "onset_unix": 1777029171.581342,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 160.2560739517212
+      }
+    },
+    {
+      "trial_number": 15,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 172.29191398620605,
+      "onset_unix": 1777029183.617183,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 172.29191493988037
+      }
+    },
+    {
+      "trial_number": 16,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 183.67098379135132,
+      "onset_unix": 1777029194.9962518,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 183.6709849834442
+      }
+    },
+    {
+      "trial_number": 17,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 195.57613801956177,
+      "onset_unix": 1777029206.901406,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 195.57613801956177
+      }
+    },
+    {
+      "trial_number": 18,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 207.39034390449524,
+      "onset_unix": 1777029218.715612,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 207.39034485816956
+      }
+    },
+    {
+      "trial_number": 19,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 219.03594493865967,
+      "onset_unix": 1777029230.361214,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 219.03594589233398
+      }
+    },
+    {
+      "trial_number": 20,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 230.90864896774292,
+      "onset_unix": 1777029242.233917,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 230.90864896774292
+      }
+    },
+    {
+      "trial_number": 21,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 242.2318069934845,
+      "onset_unix": 1777029253.557075,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 242.2318069934845
+      }
+    },
+    {
+      "trial_number": 22,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 253.62855505943298,
+      "onset_unix": 1777029264.953823,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 253.62855505943298
+      }
+    },
+    {
+      "trial_number": 23,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 265.6841518878937,
+      "onset_unix": 1777029277.00942,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 265.6841518878937
+      }
+    },
+    {
+      "trial_number": 24,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 277.4059979915619,
+      "onset_unix": 1777029288.731267,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 277.4059989452362
+      }
+    },
+    {
+      "trial_number": 25,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 289.60096311569214,
+      "onset_unix": 1777029300.9262311,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 289.60096311569214
+      }
+    },
+    {
+      "trial_number": 26,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 301.3580629825592,
+      "onset_unix": 1777029312.6833322,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 301.3580641746521
+      }
+    },
+    {
+      "trial_number": 27,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 312.82764887809753,
+      "onset_unix": 1777029324.152917,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 312.82764887809753
+      }
+    },
+    {
+      "trial_number": 28,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 324.6780631542206,
+      "onset_unix": 1777029336.0033312,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 324.6780631542206
+      }
+    },
+    {
+      "trial_number": 29,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 336.5924279689789,
+      "onset_unix": 1777029347.917696,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 336.5924279689789
+      }
+    },
+    {
+      "trial_number": 30,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 348.54150915145874,
+      "onset_unix": 1777029359.8667772,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 348.54151010513306
+      }
+    },
+    {
+      "trial_number": 31,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 359.8845009803772,
+      "onset_unix": 1777029371.209769,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 359.8845009803772
+      }
+    },
+    {
+      "trial_number": 32,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 371.77656388282776,
+      "onset_unix": 1777029383.1018329,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 371.7765648365021
+      }
+    },
+    {
+      "trial_number": 33,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 383.726726770401,
+      "onset_unix": 1777029395.0519948,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 383.726726770401
+      }
+    },
+    {
+      "trial_number": 34,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 395.97079396247864,
+      "onset_unix": 1777029407.296062,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 395.97079396247864
+      }
+    },
+    {
+      "trial_number": 35,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 408.142196893692,
+      "onset_unix": 1777029419.467465,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 408.142196893692
+      }
+    },
+    {
+      "trial_number": 36,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 420.2596070766449,
+      "onset_unix": 1777029431.584875,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 420.2596070766449
+      }
+    },
+    {
+      "trial_number": 37,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 431.57056188583374,
+      "onset_unix": 1777029442.89583,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 431.57056188583374
+      }
+    },
+    {
+      "trial_number": 38,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 443.42294096946716,
+      "onset_unix": 1777029454.748209,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 443.4229419231415
+      }
+    },
+    {
+      "trial_number": 39,
+      "run_number": 1,
+      "label": "MI",
+      "onset_time_s": 455.57434010505676,
+      "onset_unix": 1777029466.8996081,
+      "lsl_code": 1,
+      "phase_onsets": {
+        "imagery": 455.5743410587311
+      }
+    },
+    {
+      "trial_number": 40,
+      "run_number": 1,
+      "label": "REST",
+      "onset_time_s": 467.0222840309143,
+      "onset_unix": 1777029478.347552,
+      "lsl_code": 2,
+      "phase_onsets": {
+        "imagery": 467.0222840309143
+      }
+    }
+  ],
+  "breaks": [],
+  "end_time": "14:18:03",
+  "total_duration": 472.5342571735382,
+  "lsl_available": true
+}
