@@ -1,9 +1,25 @@
 # Virtual environment
 eeg_bci_env/
 
-# Large data files (re-downloadable from PhysioNet)
-eeg_data/epochs_*.fif
-eeg_data/raw_*.fif
+# ---------------------------------------------------------------
+# Participant EEG recordings — NEVER commit.
+# This is a public repository and the recordings are personal data
+# collected under informed consent for the study, not for release.
+# ---------------------------------------------------------------
+*.fif
+*.csv
+eeg_data/markers_*.json
+eeg_data/exports/
+eeg_data/για_καθηγητη/
+
+# Generated figures — regenerable from the scripts, and the per-participant
+# ones are hundreds of MB. Only the two group-level summaries used in the
+# README are tracked (see the negations below).
+eeg_data/figures/*
+!eeg_data/figures/thesis/
+eeg_data/figures/thesis/*
+!eeg_data/figures/thesis/fig_loro_summary.png
+!eeg_data/figures/thesis/fig_kfold_vs_loro.png
 
 # Trained model binaries (reproducible by running the pipeline)
 eeg_data/models/*.joblib

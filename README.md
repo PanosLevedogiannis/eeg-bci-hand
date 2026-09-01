@@ -7,10 +7,15 @@
 
 ## Overview
 
-A Brain-Computer Interface (BCI) that decodes motor imagery EEG signals and controls a 5-finger robotic hand in real time. The system classifies imagined hand movements (open vs close) from scalp EEG and sends servo commands to an InMoov i2 robotic hand via Arduino.
+A Brain-Computer Interface (BCI) that decodes motor imagery EEG and controls a 5-finger robotic hand. The system classifies imagined right-hand movement against rest from scalp EEG and sends servo commands to an InMoov i2 robotic hand via Arduino.
 
-**Task:** Two-class motor imagery — imagine opening vs closing your hand.  
-**Result:** 74.8% ± 20.2% mean accuracy across 10 subjects (PhysioNet benchmark), 8/10 subjects above chance.
+**Task:** Two-class motor imagery — imagine closing your right hand vs rest.
+
+**Dataset:** 14 participants recorded for this thesis, 320 trials each (4,480 total). Evaluation uses this primary dataset exclusively.
+
+**Results:** mean accuracy **60.8%** (10-fold CV) and **59.1%** (Leave-One-Run-Out), both significant above chance (Wilcoxon, *p* < 0.01).
+
+**Main methodological finding:** the choice of validation scheme materially changes the conclusions. Under LORO — where the model is tested on a run it has never seen — only **6 of 14** participants decode reliably, while 10-fold cross-validation would suggest nearly all of them succeed. Since any practical BCI must generalise to a new session, LORO is the scheme with operational meaning.
 
 ---
 
@@ -25,7 +30,7 @@ OpenBCI Cyton (8-ch, 250 Hz)
 │  Sliding window: 1000ms / 125ms    │
 └────────────────────────────────────┘
         │
-        ▼  CSP + LDA (best: 74.8% mean)
+        ▼  CSP (4 comp, Ledoit-Wolf) + LDA / SVM / Riemannian MDM
 ┌────────────────────────────────────┐
 │  Offline-trained classifier        │
 │  Majority vote over 7 predictions  │
@@ -58,7 +63,7 @@ OpenBCI Cyton (8-ch, 250 Hz)
 | Step | Script | Description |
 |------|--------|-------------|
 | 1 | `load_data.py` | Load PhysioNet benchmark or OpenBCI recordings |
-| 2 | `preprocess.py` | Bandpass 1–40 Hz + notch + CAR + ICA + epoching |
+| 2 | `erd_analysis.py` | Bandpass 1–40 Hz + notch 50 Hz + CAR + epoching + amplitude rejection (300 µV) |
 | 3 | `visualize.py` | ERD/ERS maps, spectrograms, topomaps |
 | 4 | `classify.py` | CSP + LDA / SVM / Riemannian MDM (10-fold CV) |
 | 5 | `realtime_gui.py` | Live EEG → classify → Arduino + graphical monitor |
@@ -92,7 +97,7 @@ pip install -r requirements_pipeline.txt
 
 | Package | Purpose |
 |---------|---------|
-| `mne` | EEG processing, epoching, ICA |
+| `mne` | EEG processing, epoching, CSP |
 | `scikit-learn` | CSP, LDA, SVM classifiers |
 | `pyriemann` | Riemannian geometry (MDM classifier) |
 | `brainflow` | OpenBCI real-time streaming |
@@ -209,30 +214,60 @@ Fingers move sequentially with 100 ms delay to prevent power surge.
 
 ---
 
-## Classification Results
+## Demo — recorded EEG driving the real hand
 
-### Single subject — PhysioNet P001
+Two scripts replay recorded trials through the classifier and drive the physical hand. Both train on runs 1–3 and replay **only run 4**, so every trial the hand reacts to is data the model has never seen. This is a genuine generalisation test, not playback of a stored movement sequence — the classifier decides on the spot and its mistakes are visible.
 
-| Classifier | Accuracy (10-fold CV) |
-|------------|----------------------|
-| LDA | **98.0%** ± 6.0% |
-| SVM (Linear) | 98.0% ± 6.0% |
-| SVM (RBF) | 95.5% ± 9.1% |
-| Riemannian MDM | 98.0% ± 6.0% |
+```bash
+# Presentation GUI: scrolling EEG + instruction + verdict + hand state
+python replay_gui.py --subject S11
 
-### Multi-subject benchmark — PhysioNet (N = 10)
+python replay_gui.py --subject S11 --trials 12    # short version
+python replay_gui.py --subject S11 --no-arduino   # screen only, no hardware
+python replay_gui.py --subject S02                # a participant who fails
 
-| Classifier | Mean ± Std | Min | Max |
-|------------|------------|-----|-----|
-| **LDA** | **74.8% ± 20.2%** | 43.5% | 98.0% |
-| SVM (Linear) | 71.9% ± 20.1% | 43.5% | 100.0% |
-| SVM (RBF) | 71.7% ± 19.9% | 38.5% | 97.5% |
-| Riemannian MDM | 59.2% ± 23.0% | 27.0% | 98.0% |
+# Terminal version, prints a per-trial table
+python replay_demo.py --subject S11
+```
 
-- **8/10 subjects** above chance (>55%) with LDA
-- Chance level: 50% (binary classification)
+`space` pauses, `q` quits.
 
-> **Note:** PhysioNet uses 64 channels at 160 Hz. With the 8-channel OpenBCI Cyton on real subject data, expected accuracy is 65–80% — still well above chance for BCI control.
+The GUI shows the EEG of the trial being classified, then the instruction the participant was actually given, and only *then* the classifier's decision — so the prediction is never revealed before the evidence.
+
+**Suggested sequence for a demo:** run S11, then S02. The first tracks the instruction closely; the second moves the hand almost at random. The contrast makes the LORO finding visible in a way no table does.
+
+**Result for S11:** 58/80 correct on the held-out run = **72.5%**.
+
+---
+
+## Classification Results — own dataset (N = 14)
+
+### Classifier comparison (10-fold CV)
+
+| Classifier | Mean ± Std | Range |
+|------------|------------|-------|
+| SVM (Linear) | **61.1% ± 7.7%** | 50.3–73.8% |
+| LDA | 60.8% ± 7.6% | 49.9–75.6% |
+| SVM (RBF) | 60.5% ± 7.4% | 49.0–72.3% |
+| Riemannian MDM | 60.5% ± 7.4% | 51.4–72.8% |
+
+All four perform equivalently. The spread between classifiers (0.6 pp) is far smaller than the spread between participants (σ ≈ 7.5), which matches the literature: once CSP has done the feature extraction, the choice of classifier matters much less than signal quality and user aptitude.
+
+### Leave-One-Run-Out — the stricter test
+
+Trained on runs 1–3, tested on run 4. Verdict is PASS when *p* < 0.05, accuracy > 60% and κ > 0.2.
+
+| | Participants | Accuracy |
+|---|---|---|
+| **PASS** | S01, S04, S05, S11, S12, S13 | 62.3–74.7% |
+| **BORDERLINE** | S03, S06, S10 | 55.6–57.8% |
+| **FAIL** | S02, S07, S08, S09, S14 | 46.7–53.2% |
+
+Group-level Wilcoxon against chance stays significant under LORO (*W* = 94, *p* = 0.003), so the effect is real at population level even though it does not appear in every individual.
+
+**Why this matters:** S02 scores 58.2% under 10-fold but 46.7% under LORO — below chance, *p* = 0.77. Per-class F1 exposes the mechanism (MI 0.28 vs REST 0.58): the classifier simply predicts *rest* almost always. Random 10-fold let it see every run during training and hid a complete failure to generalise.
+
+> 5 of 14 participants (36%) fail to decode reliably — above the 15–30% BCI-illiteracy rate reported in the literature.
 
 ---
 
@@ -240,22 +275,39 @@ Fingers move sequentially with 100 ms delay to prevent power surge.
 
 ```
 eeg-bci-hand/
-├── run_all.py                  # Master script: steps 1–4
-├── load_data.py                # Step 1 — data loading
-├── preprocess.py               # Step 2 — preprocessing + ICA
-├── visualize.py                # Step 3 — figures
-├── classify.py                 # Step 4 — CSP + classifiers
-├── realtime_gui.py             # Step 5 — live BCI + graphical monitor
-├── eeg_mi_paradigm.py          # Data collection GUI (Graz-BCI)
-├── multi_subject_analysis.py   # Multi-subject benchmark
-├── requirements_pipeline.txt   # Python dependencies
+├── eeg_mi_paradigm.py          # Data collection — Graz-BCI paradigm (Pygame)
+│
+├── erd_analysis.py             # Preprocessing + ERD/ERS + raw-signal QC
+├── classify.py                 # CSP + LDA / SVM / Riemannian MDM
+├── classify_all_subjects.py    # Batch classification over the cohort
+├── reliability_analysis.py     # Leave-One-Run-Out CV + permutation tests
+├── statistics_analysis.py      # Per-participant significance testing
+├── group_level_stats.py        # Group-level Wilcoxon
+│
+├── replay_gui.py               # DEMO — recorded EEG → classifier → hand (GUI)
+├── replay_demo.py              # DEMO — same, terminal output
+├── realtime_gui.py             # Live BCI from a streaming Cyton board
+│
+├── render_thesis_figures.py    # Print-ready figures from saved results
+├── prepare_appendix_figures.py # Downsample per-participant figures
+├── generate_report.py          # PDF/report generation
+│
+├── preprocess.py               # Legacy single-subject preprocessing
+├── load_data.py                # Loaders (PhysioNet + OpenBCI)
+├── visualize.py                # Exploratory plots
+├── run_all.py                  # Legacy single-subject driver
+│
 ├── arduino/
 │   └── InMoov_EEG_Control/
-│       └── InMoov_EEG_Control.ino   # PCA9685 Arduino sketch
+│       └── InMoov_EEG_Control.ino   # PCA9685 sketch, 9600 baud
 └── eeg_data/
-    ├── figures/                # Generated plots (ERD, topomap, ...)
+    ├── figures/                # Generated plots
     └── models/                 # Trained classifiers + JSON reports
 ```
+
+### Data availability
+
+The participant recordings are **not** included in this repository. They are personal data collected under informed consent for this study and were not released publicly. The analysis scripts take a `--dataset` argument pointing at a local folder of `SXX/` subdirectories, each containing the raw `.fif` and its marker files.
 
 ---
 
@@ -279,16 +331,17 @@ eeg-bci-hand/
 
 ## Status
 
-- [x] Offline pipeline — load, preprocess, visualize, classify
-- [x] PhysioNet 10-subject benchmark (LDA 74.8% mean)
-- [x] Real-time BCI with sliding window + majority vote
-- [x] Graphical monitor — live EEG + prediction display
-- [x] Simulate mode — full pipeline demo without EEG hardware
-- [x] Arduino sketch — PCA9685 I2C, 5-finger sequential control
-- [x] Data collection paradigm — Graz-BCI, 40 trials/class
-- [ ] Real EEG session with OpenBCI Cyton (dongle pending)
-- [ ] Subject-specific model training on personal data
-- [ ] Live closed-loop demo validation
+- [x] Offline pipeline — preprocess, ERD/ERS, classify
+- [x] Data collection paradigm — Graz-BCI, 4 runs × 80 trials
+- [x] **14 participants recorded** — 4,480 trials total
+- [x] Raw-signal quality control (rail-clipping and reference-offset detection)
+- [x] ERD/ERS analysis confirming genuine mu-band desynchronisation
+- [x] Classifier comparison — LDA, SVM (RBF + linear), Riemannian MDM
+- [x] Leave-One-Run-Out validation with 1,000-permutation significance tests
+- [x] Arduino sketch — PCA9685 I2C, 5 servos
+- [x] **Replay demo — unseen recorded trials driving the physical hand (72.5%)**
+- [ ] Closed-loop live session with real-time visual feedback to the user
+- [ ] Cross-session validation (models trained one day, tested another)
 
 ---
 

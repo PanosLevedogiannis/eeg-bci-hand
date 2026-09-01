@@ -99,7 +99,7 @@ class SessionConfig:
 
     # BrainFlow / Cyton
     cyton_port:  str = "/dev/cu.usbserial-DQ007OFI"
-    simulate:    bool = False   # True = synthetic board (no hardware needed)
+    simulate:    bool = True    # True = synthetic board (no hardware needed)
 
 
 CFG = SessionConfig()
@@ -207,6 +207,43 @@ class EEGRecorder:
     def log_marker(self, code: int):
         self._markers.append((time.time(), code))
 
+    # ADS1299 full-scale rail at gain 24 (Cyton default). Sustained presence
+    # means amplifier clipping (bad electrode/reference contact), not signal.
+    RAIL_UV = 187500.0
+
+    def check_signal_quality(self) -> dict | None:
+        """
+        Inspect EEG recorded so far (e.g. right after baseline) for the same
+        raw-acquisition faults erd_analysis.py flags during offline analysis:
+        rail-clipping and chronic one-sided offset (bad reference/bias
+        electrode). Catching this NOW lets the experimenter fix electrodes
+        before sinking 60+ minutes into a faulty session.
+        """
+        if self.board is None or not self.all_data:
+            return None
+        import numpy as np
+        data = np.concatenate(self.all_data, axis=1)[self.eeg_channels, :]
+        if data.shape[1] < self.SFREQ:   # need at least 1s of data
+            return None
+
+        rail_pct_per_ch = 100 * np.mean(np.abs(data) >= self.RAIL_UV - 1, axis=1)
+        max_rail_pct = float(rail_pct_per_ch.max())
+
+        eps = 50.0
+        ch_one_sided = (data.max(axis=1) <= eps) | (data.min(axis=1) >= -eps)
+        n_one_sided  = int(ch_one_sided.sum())
+        n_ch         = data.shape[0]
+        one_sided    = n_one_sided >= int(round(0.75 * n_ch))
+
+        return {
+            "max_rail_pct":   max_rail_pct,
+            "rail_warning":   max_rail_pct >= 1.0,
+            "one_sided":      one_sided,
+            "n_one_sided_ch": n_one_sided,
+            "n_ch":           n_ch,
+            "fault":          max_rail_pct >= 1.0 or one_sided,
+        }
+
     def start(self):
         if self.board is None:
             return
@@ -294,10 +331,10 @@ class EEGRecorder:
             return
 
         ch_names = ["C3", "C4", "FC3", "FC4", "CP3", "CP4", "Cz", "FCz"]
-        n_ch     = len(self.eeg_channels)
-        ch_names = ch_names[:n_ch]
+        eeg_ch   = self.eeg_channels[:len(ch_names)]
+        ch_names = ch_names[:len(eeg_ch)]
 
-        eeg_data = data[self.eeg_channels, :] * 1e-6   # µV → V for MNE
+        eeg_data = data[eeg_ch, :] * 1e-6   # µV → V for MNE
 
         info = mne.create_info(
             ch_names = ch_names,
@@ -698,7 +735,19 @@ class BaselineScreen(Screen):
                 self.phase = self.PHASE_DONE
                 print("  Baseline complete")
                 self.app.session_log.baseline = self.log
-                self.app.goto("session")
+
+                qc = self.app.recorder.check_signal_quality()
+                if qc and qc["fault"]:
+                    flags = []
+                    if qc["rail_warning"]:
+                        flags.append(f"amplifier rail-clipping {qc['max_rail_pct']:.1f}% of samples")
+                    if qc["one_sided"]:
+                        flags.append(f"one-sided offset on {qc['n_one_sided_ch']}/{qc['n_ch']} channels")
+                    print(f"  ⚠ SIGNAL QUALITY FAULT detected: {', '.join(flags)}")
+                    self.app.signal_qc = qc
+                    self.app.goto("signal_warning")
+                else:
+                    self.app.goto("session")
 
     def draw(self):
         s = self.surf
@@ -739,6 +788,61 @@ class BaselineScreen(Screen):
         pygame.draw.rect(s, C["accent_blue"], (0, H - 8, prog_w, 8))
 
         draw_text(s, "ESC to quit", self.app.font_small, C["dim"], W//2, H - 20)
+
+# ─────────────────────────────────────────────
+#  SIGNAL WARNING SCREEN
+# ─────────────────────────────────────────────
+
+class SignalWarningScreen(Screen):
+    """
+    Shown right after baseline if check_signal_quality() flags a raw-signal
+    fault. Lets the experimenter fix electrodes now instead of finding out
+    after a wasted 60+ minute session (this is exactly what happened with
+    S04/S07/S08/S10 — chronic offset traced to a bad reference/bias contact).
+    """
+    def __init__(self, app):
+        super().__init__(app)
+        self.qc = getattr(app, "signal_qc", {})
+
+    def handle_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.app.running = False
+            elif event.key == pygame.K_SPACE:
+                self.app.goto("session")
+
+    def draw(self):
+        s = self.surf
+        s.fill(C["bg"])
+        W, H = self.W, self.H
+
+        draw_text(s, "⚠ SIGNAL QUALITY WARNING", self.app.font_heading, C["warning"], W//2, 90)
+        pygame.draw.line(s, C["border"], (W//2 - 320, 122), (W//2 + 320, 122), 1)
+
+        lines = []
+        if self.qc.get("rail_warning"):
+            lines.append(f"Amplifier rail-clipping on {self.qc['max_rail_pct']:.1f}% of samples")
+        if self.qc.get("one_sided"):
+            lines.append(f"One-sided offset on {self.qc['n_one_sided_ch']}/{self.qc['n_ch']} channels "
+                         f"(signal never crosses zero)")
+
+        y = 170
+        for line in lines:
+            draw_text(s, line, self.app.font_body, C["white"], W//2, y, "center")
+            y += 36
+
+        y += 20
+        tips = [
+            "Likely cause: loose SRB1/SRB2 (reference/bias) electrode contact.",
+            "Check impedance via the OpenBCI GUI before continuing.",
+            "Re-seat the reference and bias electrodes, then re-check.",
+        ]
+        for tip in tips:
+            draw_text(s, tip, self.app.font_small, C["grey"], W//2, y, "center")
+            y += 30
+
+        draw_text(s, "SPACE — continue anyway", self.app.font_body, C["accent_cyan"], W//2, H - 90)
+        draw_text(s, "ESC — quit and fix electrodes (recommended)", self.app.font_body, C["accent_mi"], W//2, H - 50)
 
 # ─────────────────────────────────────────────
 #  BREAK SCREEN
@@ -1144,6 +1248,7 @@ class App:
             "intro":    IntroScreen,
             "subject":  SubjectScreen,
             "baseline": BaselineScreen,
+            "signal_warning": SignalWarningScreen,
             "session":  SessionScreen,
             "break":    lambda app: BreakScreen(app, self.current_run - 1, CFG.n_runs),
             "done":     DoneScreen,
