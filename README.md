@@ -3,6 +3,8 @@
 **BSc Thesis — Department of Electronics Engineering**  
 **Supervisor:** Asst. Prof. Athanasios Koutras
 
+**▶ Live site: https://panoslevedogiannis.github.io/eeg-bci-hand/** — the protocol, the results for all 14 participants, and an interactive 3D model of the hand.
+
 ---
 
 ## Overview

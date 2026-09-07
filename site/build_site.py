@@ -1,0 +1,72 @@
+"""Assemble the presentation site.
+
+Two builds from one template:
+
+  python3 site/build_site.py                 -> site/thesis-site.html
+      Self-contained. Per-trial participant EEG embedded. This is the file
+      published as the private Artifact and shared with the committee.
+
+  python3 site/build_site.py --pages         -> docs/index.html
+      For GitHub Pages. NO participant waveforms in the page. The demo asks
+      for demo_data.json at runtime and degrades to the 3D hand alone when
+      it is absent. Add the waveforms only after the consent question in
+      site/DATA_NOTICE.md is settled:
+
+          python3 site/build_site.py --pages --with-trials
+
+Aggregate figures (the ERD grand averages, the 14-subject results) are in
+every build — they are summary statistics, not recordings.
+"""
+import argparse, base64, json, os
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+A = os.path.join(HERE, "assets")
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--pages", action="store_true", help="build docs/index.html for GitHub Pages")
+ap.add_argument("--with-trials", action="store_true",
+                help="also write docs/demo_data.json (publishes participant waveforms)")
+args = ap.parse_args()
+
+demo = json.load(open(os.path.join(A, "demo_data.json"), encoding="utf-8"))
+trials = {k: v.pop("trials") for k, v in demo.items()}      # demo is now metadata + ERD only
+
+html = open(os.path.join(HERE, "site.tpl.html"), encoding="utf-8").read()
+html = html.replace("/*__DEMO_META__*/{}", json.dumps(demo, ensure_ascii=False, separators=(",", ":")))
+html = html.replace("/*__RESULTS__*/[]", open(os.path.join(A, "results.json"), encoding="utf-8").read())
+
+def b64(name):
+    with open(os.path.join(A, name), "rb") as f:
+        return "data:image/jpeg;base64," + base64.b64encode(f.read()).decode()
+
+for token, name in (("__IMG_COMPLETE__", "complete.jpg"),
+                    ("__IMG_TENDONS__",  "tendons.jpg"),
+                    ("__IMG_SERVOS__",   "servos.jpg")):
+    html = html.replace(token, b64(name))
+
+if args.pages:
+    html = html.replace("/*__DEMO_TRIALS__*/null", "null")
+    page = ('<!doctype html>\n<html lang="el">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            '<meta name="description" content="Διπλωματική εργασία: έλεγχος του ρομποτικού χεριού InMoov i2 '
+            'μέσω διεπαφής εγκεφάλου-υπολογιστή βασισμένης σε φαντασία κίνησης.">\n'
+            + html + "\n</head>\n<body>\n</body>\n</html>\n")
+    docs = os.path.join(ROOT, "docs")
+    os.makedirs(docs, exist_ok=True)
+    out = os.path.join(docs, "index.html")
+    open(out, "w", encoding="utf-8").write(page)
+    open(os.path.join(docs, ".nojekyll"), "w").close()
+    data_path = os.path.join(docs, "demo_data.json")
+    if args.with_trials:
+        json.dump(trials, open(data_path, "w", encoding="utf-8"), separators=(",", ":"))
+        print("wrote", data_path, "— PARTICIPANT WAVEFORMS, read site/DATA_NOTICE.md")
+    elif os.path.exists(data_path):
+        print("note:", data_path, "already exists and will be served")
+else:
+    html = html.replace("/*__DEMO_TRIALS__*/null",
+                        json.dumps(trials, ensure_ascii=False, separators=(",", ":")))
+    out = os.path.join(HERE, "thesis-site.html")
+    open(out, "w", encoding="utf-8").write(html)
+
+print("wrote", out, round(os.path.getsize(out) / 1e6, 2), "MB")

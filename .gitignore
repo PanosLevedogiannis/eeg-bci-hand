@@ -41,3 +41,17 @@ __pycache__/
 
 # Logs
 *.log
+
+# Built page — the published copy lives in docs/index.html
+site/thesis-site.html
+
+# ---------------------------------------------------------------
+# Per-trial participant waveforms exported for the site demo.
+# Same rule as the recordings above: personal data, not for release.
+# Regenerate locally with:
+#   ./eeg_bci_env/bin/python site/export_demo.py site/assets/demo_data.json S11,S01,S02
+# To publish them deliberately, read site/DATA_NOTICE.md first, then
+#   python3 site/build_site.py --pages --with-trials && git add -f docs/demo_data.json
+# ---------------------------------------------------------------
+site/assets/demo_data.json
+docs/demo_data.json

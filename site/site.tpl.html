@@ -1,0 +1,1576 @@
+<title>Χέρι InMoov μέσω ΗΕΓ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600;7..72,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --paper:#EDF0EF; --surface:#FFFFFF; --surface-2:#F6F8F7;
+  --ink:#111819; --ink-2:#525E60; --ink-3:#7C8789;
+  --rule:#D2D9D8; --rule-2:#E2E7E6;
+  --accent:#BE3527; --accent-soft:rgba(190,53,39,.10);
+  --signal:#0E6B75; --signal-soft:rgba(14,107,117,.10);
+  --pass:#2A7355; --border-line:#9A7318; --fail:#7E888A;
+  --panel:#0D1315; --panel-2:#151E20; --panel-ink:#E8EFEE; --panel-ink-2:#93A3A4;
+  --panel-rule:#263234; --panel-accent:#E8574A; --panel-signal:#43B8C2;
+  --shadow:0 1px 2px rgba(17,24,25,.05),0 8px 24px -12px rgba(17,24,25,.18);
+  --maxw:1160px; --read:70ch;
+  --f-display:"Literata",Georgia,"Times New Roman",serif;
+  --f-ui:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1011; --surface:#121A1B; --surface-2:#0F1617;
+    --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#7E8C8D;
+    --rule:#25302F; --rule-2:#1C2525;
+    --accent:#E8574A; --accent-soft:rgba(232,87,74,.13);
+    --signal:#3FAFB9; --signal-soft:rgba(63,175,185,.13);
+    --pass:#4FA582; --border-line:#C79A34; --fail:#8B9698;
+    --panel:#080D0E; --panel-2:#111A1B;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1011; --surface:#121A1B; --surface-2:#0F1617;
+  --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#7E8C8D;
+  --rule:#25302F; --rule-2:#1C2525;
+  --accent:#E8574A; --accent-soft:rgba(232,87,74,.13);
+  --signal:#3FAFB9; --signal-soft:rgba(63,175,185,.13);
+  --pass:#4FA582; --border-line:#C79A34; --fail:#8B9698;
+  --panel:#080D0E; --panel-2:#111A1B;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--f-display); font-size:17px; line-height:1.62;
+  font-synthesis-weight:none; text-rendering:optimizeLegibility;
+}
+::selection{background:var(--accent-soft)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+img{display:block}
+h1,h2,h3,h4{text-wrap:balance; margin:0; font-weight:600; line-height:1.18}
+p{margin:0}
+
+/* ---------- layout primitives ---------- */
+.wrap{max-width:var(--maxw); margin-inline:auto; padding-inline:24px}
+.read{max-width:var(--read)}
+.stack{display:flex; flex-direction:column}
+.s-8{gap:8px} .s-12{gap:12px} .s-16{gap:16px} .s-20{gap:20px} .s-24{gap:24px} .s-32{gap:32px} .s-40{gap:40px}
+section{padding-block:76px; border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0}
+
+/* ---------- type roles ---------- */
+.eyebrow{
+  font-family:var(--f-ui); font-size:11.5px; font-weight:600;
+  letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
+}
+.sec-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+.sec-num{font-family:var(--f-mono); font-size:12px; font-weight:500; color:var(--accent); letter-spacing:.04em}
+h2{font-size:clamp(26px,3.4vw,36px); letter-spacing:-.015em}
+h3{font-size:20px; letter-spacing:-.008em}
+.lede{font-size:19.5px; line-height:1.58; color:var(--ink-2)}
+.body p+p{margin-top:1.05em}
+.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+.ui{font-family:var(--f-ui)}
+.note{font-family:var(--f-ui); font-size:13.5px; line-height:1.55; color:var(--ink-3)}
+strong{font-weight:600}
+em.term{font-style:normal; font-family:var(--f-ui); font-size:.94em; font-weight:500;
+  background:var(--signal-soft); padding:.08em .34em; border-radius:3px; color:var(--ink)}
+code{font-family:var(--f-mono); font-size:.86em; background:var(--surface-2);
+  border:1px solid var(--rule-2); padding:.1em .36em; border-radius:3px}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:50; background:var(--paper);
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:saturate(1.5) blur(10px); border-bottom:1px solid var(--rule);
+}
+.topbar-in{max-width:var(--maxw); margin-inline:auto; padding:0 24px; height:52px;
+  display:flex; align-items:center; gap:26px}
+.tb-mark{font-family:var(--f-mono); font-size:12px; font-weight:700; letter-spacing:.06em; white-space:nowrap}
+.tb-mark span{color:var(--accent)}
+.tb-nav{display:flex; gap:20px; margin-inline-start:auto; overflow-x:auto; scrollbar-width:none}
+.tb-nav::-webkit-scrollbar{display:none}
+.tb-nav a{font-family:var(--f-ui); font-size:13px; color:var(--ink-2); text-decoration:none;
+  white-space:nowrap; padding:4px 0; border-bottom:1.5px solid transparent}
+.tb-nav a:hover{color:var(--ink); border-bottom-color:var(--accent)}
+@media(max-width:720px){.tb-nav a:nth-child(n+5){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding-block:64px 0; border-top:0}
+.hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:52px; align-items:end}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr; gap:36px; align-items:start}}
+h1{font-size:clamp(30px,4.6vw,50px); line-height:1.1; letter-spacing:-.025em; font-weight:600}
+.h1-en{font-family:var(--f-ui); font-size:15px; font-weight:400; color:var(--ink-3); line-height:1.45; max-width:44ch}
+.byline{display:flex; flex-wrap:wrap; gap:0 28px; font-family:var(--f-ui); font-size:13.5px; color:var(--ink-2)}
+.byline b{display:block; font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.hero-fig{margin:0}
+.hero-fig img{width:100%; height:auto; border-radius:3px; box-shadow:var(--shadow)}
+figcaption{font-family:var(--f-ui); font-size:12.5px; line-height:1.5; color:var(--ink-3); margin-top:10px}
+
+/* ---------- key figures strip ---------- */
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--rule);
+  border-block:1px solid var(--rule); margin-top:56px}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--paper); padding:20px 22px; display:flex; flex-direction:column; gap:3px}
+.kpi .v{font-family:var(--f-mono); font-size:27px; font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.kpi .k{font-family:var(--f-ui); font-size:12.5px; color:var(--ink-2); line-height:1.35}
+.kpi .u{font-size:.62em; color:var(--ink-3)}
+
+/* ---------- pipeline ---------- */
+.chain{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:4px; overflow:hidden;
+  grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.chain{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:540px){.chain{grid-template-columns:1fr}}
+.node{background:var(--surface); padding:18px 20px 20px; display:flex; flex-direction:column; gap:7px; position:relative}
+.node .n-i{font-family:var(--f-mono); font-size:10.5px; color:var(--ink-3); letter-spacing:.08em}
+.node h4{font-family:var(--f-ui); font-size:15px; font-weight:600; letter-spacing:-.005em}
+.node p{font-family:var(--f-ui); font-size:13px; line-height:1.5; color:var(--ink-2)}
+.node .spec{font-family:var(--f-mono); font-size:11.5px; color:var(--ink-3); line-height:1.6; margin-top:2px}
+.node.is-hw{background:var(--surface-2)}
+.node .bar{position:absolute; inset-inline-start:0; top:0; bottom:0; width:2px; background:var(--signal)}
+.node.is-hw .bar{background:var(--accent)}
+
+/* ---------- generic panel/card ---------- */
+.panel{background:var(--surface); border:1px solid var(--rule); border-radius:4px}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:32px}
+@media(max-width:860px){.grid-2{grid-template-columns:1fr; gap:26px}}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-family:var(--f-ui); font-size:13.5px; min-width:640px}
+th,td{text-align:end; padding:9px 14px; border-bottom:1px solid var(--rule-2); white-space:nowrap}
+th:first-child,td:first-child{text-align:start}
+thead th{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:600; border-bottom:1px solid var(--rule); background:var(--surface-2); position:sticky; top:0}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+td.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+.chip{display:inline-block; font-family:var(--f-ui); font-size:10.5px; font-weight:600; letter-spacing:.07em;
+  text-transform:uppercase; padding:2.5px 7px; border-radius:3px; border:1px solid currentColor; line-height:1.3}
+.chip.pass{color:var(--pass)} .chip.bord{color:var(--border-line)} .chip.fail{color:var(--fail)}
+
+/* ---------- charts ---------- */
+.chart-card{background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:20px 20px 14px}
+.chart-title{font-family:var(--f-ui); font-size:14px; font-weight:600; margin-bottom:2px}
+.chart-sub{font-family:var(--f-ui); font-size:12.5px; color:var(--ink-3); line-height:1.45; margin-bottom:14px}
+.legend{display:flex; gap:16px; flex-wrap:wrap; font-family:var(--f-ui); font-size:12px; color:var(--ink-2); margin-top:10px}
+.legend i{display:inline-block; width:16px; height:2.5px; border-radius:2px; vertical-align:middle; margin-inline-end:6px}
+svg.chart{display:block; width:100%; height:auto; overflow:visible}
+svg.chart text{font-family:var(--f-mono); font-size:10px; fill:var(--ink-3); font-variant-numeric:tabular-nums}
+svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
+
+/* ---------- instrument (dark) ---------- */
+.rig{background:var(--panel); color:var(--panel-ink); border-radius:5px; overflow:hidden;
+  border:1px solid var(--panel-rule); box-shadow:0 24px 60px -30px rgba(0,0,0,.6)}
+.rig-bar{display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:11px 16px; border-bottom:1px solid var(--panel-rule); background:var(--panel-2)}
+.rig-bar .t{font-family:var(--f-mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2)}
+.rig-body{display:grid; grid-template-columns:1.02fr .98fr}
+@media(max-width:920px){.rig-body{grid-template-columns:1fr}}
+.stage{position:relative; background:
+  radial-gradient(120% 90% at 50% 18%, #1b2527 0%, #0a1011 62%, #060a0b 100%); min-height:430px}
+#hand-canvas{display:block; width:100%; height:100%; position:absolute; inset:0; touch-action:none; cursor:grab}
+#hand-canvas.dragging{cursor:grabbing}
+.stage-tag{position:absolute; inset-inline-start:14px; top:12px; z-index:2; pointer-events:none;
+  font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; color:#6E8082; text-transform:uppercase}
+.stage-state{position:absolute; inset-inline-start:14px; bottom:14px; z-index:2; pointer-events:none;
+  display:flex; flex-direction:column; gap:3px}
+.stage-state .lab{font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; color:#6E8082; text-transform:uppercase}
+.stage-state .val{font-family:var(--f-ui); font-size:20px; font-weight:600; letter-spacing:-.01em; transition:color .3s}
+.stage-hint{position:absolute; inset-inline-end:14px; bottom:14px; z-index:2; pointer-events:none;
+  font-family:var(--f-ui); font-size:11px; color:#5E7072}
+.readout{padding:18px 20px 20px; display:flex; flex-direction:column; gap:16px; border-inline-start:1px solid var(--panel-rule)}
+@media(max-width:920px){.readout{border-inline-start:0; border-top:1px solid var(--panel-rule)}}
+.scope{width:100%; height:190px; display:block; background:#070C0D; border:1px solid var(--panel-rule); border-radius:3px}
+.rowline{display:flex; align-items:baseline; justify-content:space-between; gap:14px}
+.rowline .k{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2)}
+.rowline .v{font-family:var(--f-ui); font-size:15px; font-weight:600}
+.verdict-box{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--panel-rule);
+  border:1px solid var(--panel-rule); border-radius:3px; overflow:hidden}
+.vcell{background:var(--panel-2); padding:11px 13px; display:flex; flex-direction:column; gap:4px; min-height:66px}
+.vcell .k{font-family:var(--f-mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--panel-ink-2)}
+.vcell .v{font-family:var(--f-ui); font-size:17px; font-weight:600; letter-spacing:-.01em; transition:color .25s}
+.dim{color:#4C5C5E}
+.mi{color:var(--panel-accent)} .rest{color:var(--panel-signal)}
+.conf{height:4px; background:#1B2426; border-radius:2px; overflow:hidden; margin-top:4px}
+.conf i{display:block; height:100%; width:0%; border-radius:2px; transition:width .35s ease, background-color .25s}
+.ribbon{display:flex; gap:2px; flex-wrap:wrap; align-content:flex-start; min-height:22px}
+.ribbon i{width:9px; height:9px; border-radius:1px; background:#1D2729; transition:background-color .2s}
+.ribbon i.ok{background:#3E9C76} .ribbon i.no{background:#4A5557}
+.ribbon i.now{outline:1.5px solid var(--panel-ink); outline-offset:1px}
+.ctrls{display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  padding:11px 16px; border-top:1px solid var(--panel-rule); background:var(--panel-2)}
+.btn{font-family:var(--f-ui); font-size:13px; font-weight:500; color:var(--panel-ink);
+  background:#1C2628; border:1px solid #2C3739; border-radius:3px; padding:7px 14px; cursor:pointer;
+  transition:background-color .15s, border-color .15s}
+.btn:hover{background:#263234; border-color:#3B4749}
+.btn.primary{background:var(--panel-accent); border-color:var(--panel-accent); color:#12191A; font-weight:600}
+.btn.primary:hover{background:#F0685C; border-color:#F0685C}
+.seg{display:flex; border:1px solid #2C3739; border-radius:3px; overflow:hidden}
+.seg button{font-family:var(--f-mono); font-size:12px; color:var(--panel-ink-2); background:#141D1E;
+  border:0; padding:7px 11px; cursor:pointer; border-inline-start:1px solid #2C3739}
+.seg button:first-child{border-inline-start:0}
+.seg button[aria-pressed="true"]{background:#2A3638; color:var(--panel-ink)}
+.subj-pick{display:flex; gap:8px; flex-wrap:wrap}
+.subj{display:flex; flex-direction:column; gap:2px; text-align:start; padding:8px 13px; cursor:pointer;
+  background:#141D1E; border:1px solid #2C3739; border-radius:3px; transition:border-color .15s, background-color .15s}
+.subj:hover{background:#1E2A2C}
+.subj[aria-pressed="true"]{border-color:var(--panel-ink); background:#232F31}
+.subj .id{font-family:var(--f-mono); font-size:13px; font-weight:700; color:var(--panel-ink); letter-spacing:.03em}
+.subj .meta{font-family:var(--f-ui); font-size:10.5px; color:var(--panel-ink-2); letter-spacing:.02em}
+
+/* ---------- misc blocks ---------- */
+.callout{border-inline-start:2px solid var(--accent); padding:2px 0 2px 18px; margin-block:4px}
+.callout .h{font-family:var(--f-ui); font-size:11px; font-weight:600; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:5px}
+.deflist{display:grid; grid-template-columns:auto 1fr; gap:9px 20px; font-family:var(--f-ui); font-size:14px}
+.deflist dt{font-family:var(--f-mono); font-size:12px; color:var(--ink-3); white-space:nowrap; padding-top:2px}
+.deflist dd{margin:0; color:var(--ink-2); line-height:1.5}
+.photos{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+@media(max-width:760px){.photos{grid-template-columns:1fr}}
+.photos img{width:100%; height:auto; border-radius:3px; border:1px solid var(--rule)}
+.findings{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:20px; counter-reset:f}
+.findings li{display:grid; grid-template-columns:auto 1fr; gap:16px; counter-increment:f}
+.findings li::before{content:counter(f,decimal-leading-zero); font-family:var(--f-mono); font-size:12px;
+  color:var(--accent); padding-top:5px}
+.findings h4{font-family:var(--f-ui); font-size:15.5px; font-weight:600; margin-bottom:4px}
+.findings p{font-size:16px; line-height:1.55; color:var(--ink-2)}
+footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:var(--f-ui); font-size:13px; color:var(--ink-3)}
+.foot-grid{display:flex; flex-wrap:wrap; gap:12px 44px; justify-content:space-between; align-items:flex-end}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important}}
+</style>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="tb-mark">InMoov<span>·</span>ΗΕΓ</div>
+    <nav class="tb-nav">
+      <a href="#erotima">Το ερώτημα</a>
+      <a href="#alysida">Η αλυσίδα</a>
+      <a href="#peirama">Το πείραμα</a>
+      <a href="#demo">Demo</a>
+      <a href="#apotelesmata">Αποτελέσματα</a>
+      <a href="#kataskevi">Η κατασκευή</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero wrap">
+  <div class="hero-grid">
+    <div class="stack s-24">
+      <div class="stack s-12">
+        <div class="eyebrow">Πανεπιστήμιο Πελοποννήσου · Τμήμα Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών</div>
+        <h1>Έλεγχος ρομποτικού χεριού μέσω διεπαφής εγκεφάλου&#8211;υπολογιστή βασισμένης σε φαντασία κίνησης</h1>
+        <p class="h1-en">EEG-Based Motor Imagery Brain&#8211;Computer Interface for Robotic Hand Control &#183; Διπλωματική εργασία</p>
+      </div>
+      <div class="byline">
+        <div><b>Συγγραφέας</b>Παναγιώτης Λεβεντογιάννης</div>
+        <div><b>Επιβλέπων</b>Αθανάσιος Κούτρας, Επίκουρος Καθηγητής</div>
+        <div><b>Έτος</b>Πάτρα 2026</div>
+      </div>
+      <div><a class="btn primary ui" href="#demo" style="text-decoration:none; display:inline-block">Δες το demo &#8595;</a></div>
+    </div>
+    <figure class="hero-fig">
+      <img src="__IMG_COMPLETE__" alt="Το ολοκληρωμένο ρομποτικό χέρι InMoov i2 με τον πήχη, τυπωμένο σε μαύρο PLA, με κόκκινους τένοντες και καλωδιώσεις σερβοκινητήρων." width="900" height="1200">
+      <figcaption>Το χέρι InMoov i2 όπως κατασκευάστηκε: πέντε δάχτυλα με τρεις φάλαγγες το καθένα, τένοντες από κόκκινο κορδόνι, και ο πήχης που στεγάζει τους πέντε σερβοκινητήρες.</figcaption>
+    </figure>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v">14</div><div class="k">συμμετέχοντες, πρωτογενές σύνολο δεδομένων</div></div>
+    <div class="kpi"><div class="v">4.480</div><div class="k">δοκιμές φαντασίας κίνησης και ηρεμίας</div></div>
+    <div class="kpi"><div class="v">8<span class="u"> κανάλια</span></div><div class="k">OpenBCI Cyton στα 250 Hz</div></div>
+    <div class="kpi"><div class="v">72,5<span class="u">%</span></div><div class="k">σωστές εντολές σε run εκτός εκπαίδευσης</div></div>
+  </div>
+</header>
+
+<section id="erotima" class="wrap">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Το ερώτημα</h2></div>
+  <div class="read stack s-24 body" style="margin-top:22px">
+    <p class="lede">Όταν φαντάζεσαι ότι κλείνεις το χέρι σου χωρίς να το κουνήσεις, ο αισθητικοκινητικός φλοιός αντιδρά σχεδόν όπως στην πραγματική κίνηση. Το ερώτημα εδώ είναι πόσο μακριά φτάνει αυτό το ίχνος.</p>
+    <p>Η εργασία κατασκευάζει ολόκληρη την αλυσίδα, από το τριχωτό της κεφαλής μέχρι τα δάχτυλα: οκτώ ηλεκτρόδια πάνω από την κεντρική ζώνη, ένας ταξινομητής που μαθαίνει να ξεχωρίζει τη <em class="term">φαντασία κίνησης</em> από την <em class="term">ηρεμία</em>, και ένα ρομποτικό χέρι InMoov i2 που ανοίγει και κλείνει ανάλογα με την απόφασή του. Όλα τα εξαρτήματα είναι ανοιχτού κώδικα και χαμηλού κόστους.</p>
+    <p>Το ζητούμενο δεν ήταν ένα εντυπωσιακό βίντεο. Ήταν να μετρηθεί, με το αυστηρότερο σχήμα αξιολόγησης που επιτρέπουν τα δεδομένα, πόσο αξιόπιστα δουλεύει αυτή η αλυσίδα σε ανθρώπους που δεν έχουν ξαναδεί ποτέ διεπαφή εγκεφάλου&#8211;υπολογιστή. Η απάντηση είναι ότι δουλεύει, αλλά όχι για όλους, και η διαφορά ανάμεσα στους δύο τρόπους μέτρησης αποδείχθηκε το πιο ενδιαφέρον εύρημα της εργασίας.</p>
+  </div>
+</section>
+
+<section id="alysida" class="wrap">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Η αλυσίδα σήματος</h2></div>
+  <p class="lede read" style="margin:14px 0 30px">Έξι στάδια χωρίζουν έναν εγκεφαλικό ρυθμό από την περιστροφή ενός σερβοκινητήρα. Οι κόκκινοι δείκτες σημαίνουν υλικό, οι γαλάζιοι λογισμικό.</p>
+  <div class="chain">
+    <div class="node is-hw"><i class="bar"></i>
+      <div class="n-i">ΠΗΓΗ</div><h4>Αισθητικοκινητικός φλοιός</h4>
+      <p>Η φαντασία κίνησης του δεξιού χεριού αποδυναμώνει τον ρυθμό μ πάνω από την αντίπλευρη πλευρά. Το φαινόμενο λέγεται αποσυγχρονισμός σχετιζόμενος με γεγονός.</p>
+      <div class="spec">ERD · 8&#8211;13 Hz · C3 έναντι C4</div>
+    </div>
+    <div class="node is-hw"><i class="bar"></i>
+      <div class="n-i">ΚΑΤΑΓΡΑΦΗ</div><h4>OpenBCI Cyton</h4>
+      <p>Οκτώ ηλεκτρόδια στην κεντρική και κεντρομετωπιαία ζώνη κατά το σύστημα 10&#8211;20, με ενισχυτή ADS1299 και συγχρονισμένους markers μέσω Lab Streaming Layer.</p>
+      <div class="spec">250 Hz · 24-bit · C3 C4 FC3 FC4 CP3 CP4 Cz FCz</div>
+    </div>
+    <div class="node"><i class="bar"></i>
+      <div class="n-i">ΚΑΘΑΡΙΣΜΟΣ</div><h4>Προεπεξεργασία</h4>
+      <p>Ζωνοπερατό φίλτρο, αφαίρεση του δικτύου, κοινή μέση αναφορά για να φύγει ό,τι είναι κοινό σε όλα τα κανάλια, και απόρριψη εποχών με ακραία πλάτη.</p>
+      <div class="spec">1&#8211;40 Hz FIR · notch 50 Hz · CAR · κατώφλι 200 µV</div>
+    </div>
+    <div class="node"><i class="bar"></i>
+      <div class="n-i">ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ</div><h4>Κοινά χωρικά πρότυπα</h4>
+      <p>Το CSP βρίσκει τους χωρικούς συνδυασμούς καναλιών που μεγιστοποιούν τη διαφορά ισχύος ανάμεσα στις δύο κλάσεις. Η κανονικοποίηση Ledoit-Wolf το σταθεροποιεί στα λίγα κανάλια.</p>
+      <div class="spec">8&#8211;30 Hz · 4 συνιστώσες · Ledoit-Wolf</div>
+    </div>
+    <div class="node"><i class="bar"></i>
+      <div class="n-i">ΑΠΟΦΑΣΗ</div><h4>Ταξινομητής</h4>
+      <p>Τέσσερις ταξινομητές αξιολογήθηκαν συγκριτικά και απέδωσαν ουσιαστικά το ίδιο. Ο γραμμικός διαχωριστής Fisher χρησιμοποιείται στο demo ως ο απλούστερος από αυτούς.</p>
+      <div class="spec">LDA · SVM-RBF · SVM γραμμικό · Riemannian MDM</div>
+    </div>
+    <div class="node is-hw"><i class="bar"></i>
+      <div class="n-i">ΕΝΕΡΓΟΠΟΙΗΣΗ</div><h4>Arduino και σερβοκινητήρες</h4>
+      <p>Δύο εντολές ταξιδεύουν στη σειριακή θύρα. Ο οδηγός PCA9685 μεταφράζει την απόφαση σε παλμούς για πέντε σερβοκινητήρες, που τραβούν τους τένοντες των δαχτύλων.</p>
+      <div class="spec">9600 baud · I²C · min = κλείσιμο · mid = άνοιγμα</div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:18px; max-width:78ch">Στη ζωντανή λειτουργία το παράθυρο ανάλυσης του ενός δευτερολέπτου ολισθαίνει ανά 125 ms και η τελική εντολή προκύπτει από πλειοψηφική ψήφο των επτά τελευταίων αποφάσεων. Η συνολική καθυστέρηση από τη σκέψη ως την κίνηση είναι περίπου μισό δευτερόλεπτο.</p>
+</section>
+
+<style>
+  .tl-seg{stroke:var(--surface); stroke-width:1}
+  .tl-rest{fill:var(--rule)} .tl-prep{fill:var(--rule-2)}
+  .tl-cue{fill:var(--signal-soft); stroke:var(--signal); stroke-width:1}
+  .tl-img{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1}
+  .tl-win{fill:var(--accent); opacity:.18}
+  .tl-mark{stroke:var(--accent); stroke-width:1.5}
+  .tl-tick{stroke:var(--ink-3); stroke-width:1}
+  .tl-name{font-family:var(--f-ui); font-size:10.5px; fill:var(--ink-2)}
+  .tl-dur{font-family:var(--f-mono); font-size:9.5px; fill:var(--ink-3)}
+  .tl-key{font-family:var(--f-mono); font-size:10px; fill:var(--accent); font-weight:500}
+  .hd-out{fill:var(--surface-2); stroke:var(--rule); stroke-width:1.5}
+  .hd-el{fill:var(--surface); stroke:var(--ink-3); stroke-width:1.2}
+  .hd-el-hot{fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.6}
+  .hd-lb{font-family:var(--f-mono); font-size:8.5px; fill:var(--ink-2); text-anchor:middle; dominant-baseline:central}
+  .hd-lb-hot{fill:var(--accent); font-weight:700}
+</style>
+
+<section id="peirama" class="wrap">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Το πείραμα</h2></div>
+  <p class="lede read" style="margin:14px 0 34px">Κάθε συμμετέχων πέρασε τέσσερα runs των σαράντα δοκιμών, εναλλάξ φαντασία κίνησης και ηρεμία, κατά το πρωτόκολλο Graz-BCI.</p>
+
+  <div class="stack s-16" style="margin-bottom:46px">
+      <h3>Η δομή μιας δοκιμής</h3>
+      <div class="chart-card">
+        <svg class="chart" viewBox="0 0 700 152" style="max-width:830px;margin-inline:auto" role="img" aria-label="Χρονοδιάγραμμα μιας δοκιμής: ηρεμία 1,5 έως 2,5 δευτερόλεπτα, ετοιμασία 2 δευτερόλεπτα, cue 2,25 δευτερόλεπτα, φαντασία κίνησης 4 δευτερόλεπτα με τον marker στην αρχή της, διάλειμμα 1,5 δευτερόλεπτο.">
+          <text class="tl-key" x="370" y="14" text-anchor="middle">t = 0 · marker</text>
+          <line class="tl-mark" x1="370.6" y1="20" x2="370.6" y2="86"></line>
+          <rect class="tl-seg tl-rest" x="30" y="46" width="109" height="32"></rect>
+          <rect class="tl-seg tl-prep" x="139" y="46" width="109" height="32"></rect>
+          <rect class="tl-seg tl-cue" x="248" y="46" width="122.6" height="32"></rect>
+          <rect class="tl-seg tl-img" x="370.6" y="46" width="218" height="32"></rect>
+          <rect class="tl-win" x="397.9" y="47" width="163.5" height="30"></rect>
+          <rect class="tl-seg tl-prep" x="588.6" y="46" width="81.8" height="32"></rect>
+          <line class="tl-tick" x1="220.7" y1="38" x2="220.7" y2="46"></line>
+          <text class="tl-dur" x="220.7" y="33" text-anchor="middle">beep 70 ms</text>
+          <text class="tl-name" x="84" y="95" text-anchor="middle">Ηρεμία</text>
+          <text class="tl-dur" x="84" y="108" text-anchor="middle">1,5–2,5 s</text>
+          <text class="tl-name" x="193" y="95" text-anchor="middle">Ετοιμασία</text>
+          <text class="tl-dur" x="193" y="108" text-anchor="middle">2,0 s</text>
+          <text class="tl-name" x="309" y="95" text-anchor="middle">Οδηγία</text>
+          <text class="tl-dur" x="309" y="108" text-anchor="middle">2,25 s</text>
+          <text class="tl-name" x="479" y="95" text-anchor="middle">Φαντασία κίνησης ή ηρεμία</text>
+          <text class="tl-dur" x="479" y="108" text-anchor="middle">4,0 s</text>
+          <text class="tl-name" x="629" y="95" text-anchor="middle">Διάλειμμα</text>
+          <text class="tl-dur" x="629" y="108" text-anchor="middle">1,5 s</text>
+          <path d="M397.9 126 L397.9 132 L561.4 132 L561.4 126" fill="none" stroke="var(--accent)" stroke-width="1"></path>
+          <text class="tl-key" x="479.6" y="147" text-anchor="middle">παράθυρο ταξινόμησης 0,5–3,5 s</text>
+        </svg>
+      </div>
+      <p class="note" style="max-width:92ch">Ο marker καταγράφεται τη στιγμή που η οδηγία σβήνει και μένει μόνο ο σταυρός προσήλωσης. Το ηχητικό σήμα μισό δευτερόλεπτο νωρίτερα προετοιμάζει τον συμμετέχοντα χωρίς να προλαβαίνει να μολύνει το παράθυρο ανάλυσης. Ο τυχαίος χρόνος ηρεμίας εμποδίζει τον εγκέφαλο να προβλέψει πότε έρχεται η επόμενη οδηγία.</p>
+  </div>
+
+  <div class="grid-2" style="gap:44px">
+    <div class="stack s-16">
+      <h3>Τα οκτώ ηλεκτρόδια</h3>
+      <div class="chart-card" style="display:flex; gap:22px; align-items:center; flex-wrap:wrap">
+        <svg class="chart" viewBox="0 0 264 250" style="max-width:230px; flex:0 0 auto" role="img" aria-label="Διάταξη ηλεκτροδίων: C3 και C4 εκατέρωθεν του Cz, με FC3, FCz, FC4 μπροστά και CP3, CP4 πίσω.">
+          <path d="M120 26 L132 8 L144 26 Z" class="hd-out"></path>
+          <path d="M30 118 a10 14 0 1 0 0 24" class="hd-out"></path>
+          <path d="M234 118 a10 14 0 1 1 0 24" class="hd-out"></path>
+          <circle class="hd-out" cx="132" cy="130" r="100"></circle>
+          <line x1="132" y1="30" x2="132" y2="230" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4"></line>
+          <line x1="32" y1="130" x2="232" y2="130" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4"></line>
+          <circle class="hd-el" cx="94" cy="108" r="13"></circle><text class="hd-lb" x="94" y="108">FC3</text>
+          <circle class="hd-el" cx="132" cy="108" r="13"></circle><text class="hd-lb" x="132" y="108">FCz</text>
+          <circle class="hd-el" cx="170" cy="108" r="13"></circle><text class="hd-lb" x="170" y="108">FC4</text>
+          <circle class="hd-el-hot" cx="92" cy="130" r="13"></circle><text class="hd-lb hd-lb-hot" x="92" y="130">C3</text>
+          <circle class="hd-el" cx="132" cy="130" r="13"></circle><text class="hd-lb" x="132" y="130">Cz</text>
+          <circle class="hd-el-hot" cx="172" cy="130" r="13"></circle><text class="hd-lb hd-lb-hot" x="172" y="130">C4</text>
+          <circle class="hd-el" cx="94" cy="152" r="13"></circle><text class="hd-lb" x="94" y="152">CP3</text>
+          <circle class="hd-el" cx="170" cy="152" r="13"></circle><text class="hd-lb" x="170" y="152">CP4</text>
+          <text class="tl-dur" x="132" y="245" text-anchor="middle">πρόσοψη · σύστημα 10–20</text>
+        </svg>
+        <dl class="deflist" style="flex:1 1 190px">
+          <dt>C3 · C4</dt><dd>Πάνω από τον κινητικό φλοιό κάθε ημισφαιρίου. Εκεί εμφανίζεται καθαρότερα το ERD.</dd>
+          <dt>FC · CP</dt><dd>Πλαισιώνουν την κεντρική ζώνη και δίνουν στο CSP χωρική πληροφορία.</dd>
+          <dt>Cz · FCz</dt><dd>Μεσαία γραμμή, χρήσιμη ως αναφορά για την κοινή μέση αναφορά.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="stack s-16">
+      <h3>Το σύνολο δεδομένων</h3>
+      <div class="callout">
+        <div class="h">4.480 δοκιμές</div>
+        <p class="note" style="color:var(--ink-2)">14 συμμετέχοντες &#215; 4 runs &#215; 40 δοκιμές = 4.480 δοκιμές συνολικά, μοιρασμένες ισόποσα ανάμεσα στη φαντασία κίνησης και την ηρεμία. Κάθε συνεδρία ξεκινούσε με καταγραφή βάσης με ανοιχτά και κλειστά μάτια, ώστε να ελέγχεται η ποιότητα επαφής πριν αρχίσουν τα runs.</p>
+      </div>
+      <p class="note">Οι δοκιμές των δύο κλάσεων εναλλάσσονται σε τυχαία σειρά μέσα σε κάθε run, ώστε ούτε ο συμμετέχων ούτε ο ταξινομητής να μπορούν να στηριχθούν σε μοτίβο. Ανάμεσα στα runs μεσολαβεί υποχρεωτικό διάλειμμα.</p>
+    </div>
+  </div>
+</section>
+
+<section id="fainomeno" class="wrap">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Το φαινόμενο που ψάχνουμε</h2></div>
+  <div class="grid-2" style="margin-top:20px; gap:40px; align-items:start">
+    <div class="read stack s-20 body">
+      <p class="lede">Ο ρυθμός μ, γύρω στα 10 Hz, είναι ο ρυθμός της αδράνειας του κινητικού φλοιού. Μόλις ο φλοιός ενεργοποιηθεί, ακόμη και μόνο με τη φαντασία, ο ρυθμός σπάει.</p>
+      <p>Η πτώση αυτή ονομάζεται αποσυγχρονισμός σχετιζόμενος με γεγονός και είναι το σήμα που ψάχνει όλη η αλυσίδα. Το διάγραμμα δίπλα δείχνει τον μέσο όρο και των 320 δοκιμών του συμμετέχοντα S11: η ισχύς στη ζώνη 8&#8211;13 Hz, ως ποσοστιαία μεταβολή σε σχέση με το δευτερόλεπτο πριν από τον marker.</p>
+      <p>Η γραμμή βάσης εδώ δεν είναι χαλαρή ανάπαυση: τη στιγμή εκείνη η οδηγία είναι ακόμη στην οθόνη και ο συμμετέχων είναι σε εγρήγορση, οπότε ο ρυθμός μ είναι ήδη κατεσταλμένος και στις δύο κλάσεις. Ό,τι ακολουθεί μετά τον marker είναι η διαφορά τους. Στις δοκιμές ηρεμίας ο ρυθμός επανέρχεται και ανεβαίνει είκοσι μονάδες πάνω από τη βάση. Στις δοκιμές φαντασίας κίνησης μένει καθηλωμένος στη βάση για όλα τα τέσσερα δευτερόλεπτα.</p>
+      <p>Αυτή ακριβώς η απόσταση ανάμεσα στις δύο καμπύλες, γύρω στις είκοσι ποσοστιαίες μονάδες και στα δύο κανάλια, είναι που ο ταξινομητής προσπαθεί να εκμεταλλευτεί. Στη μεμονωμένη δοκιμή όμως, εκεί που πραγματικά δουλεύει, το σήμα είναι πολύ πιο θορυβώδες από ό,τι στον μέσο όρο.</p>
+    </div>
+    <div class="stack s-16">
+      <div class="chart-card">
+        <div class="chart-title">Αποσυγχρονισμός του ρυθμού μ — συμμετέχων S11</div>
+        <div class="chart-sub">Μέση ισχύς 8–13 Hz ως ποσοστιαία μεταβολή από το δευτερόλεπτο πριν τον marker, όσο η οδηγία ήταν ακόμη στην οθόνη. Μέσος όρος 160 δοκιμών ανά κλάση.</div>
+        <div id="erd-chart"></div>
+        <div class="legend">
+          <span><i style="background:var(--accent)"></i>Φαντασία κίνησης</span>
+          <span><i style="background:var(--signal)"></i>Ηρεμία</span>
+          <span><i style="background:var(--ink-3); height:0; border-top:1.5px dashed var(--ink-3)"></i>Marker</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="demo" class="wrap">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Το demo</h2></div>
+  <p class="lede read" id="demo-lede" style="margin:14px 0 12px">Πραγματικές δοκιμές, πραγματικός ταξινομητής, χέρι σε τρεις διαστάσεις. Ο ταξινομητής εκπαιδεύτηκε στα runs 1&#8211;3 και εδώ βλέπει το run 4 για πρώτη φορά.</p>
+  <p class="note read" id="demo-note" style="margin-bottom:26px">Κάθε δοκιμή που παίζει είναι καταγεγραμμένο σήμα από τον δίσκο, όχι προσομοίωση. Οι κυματομορφές είναι τα κανάλια C3 και C4 μετά από φιλτράρισμα 1&#8211;40 Hz και κοινή μέση αναφορά. Η απόφαση εμφανίζεται στα 3,5 δευτερόλεπτα, μόλις κλείσει το παράθυρο ταξινόμησης, και τότε ακριβώς φεύγει η εντολή προς το χέρι.</p>
+
+  <div class="rig">
+    <div class="rig-bar">
+      <span class="t" id="subj-label">Συμμετέχων</span>
+      <div class="subj-pick" id="subj-pick"></div>
+      <span class="t" style="margin-inline-start:auto" id="rig-protocol">εκπαίδευση runs 1–3 · αναπαραγωγή run 4</span>
+    </div>
+
+    <div class="rig-body">
+      <div class="stage">
+        <canvas id="hand-canvas"></canvas>
+        <div class="stage-tag">InMoov i2 · δεξί χέρι</div>
+        <div class="stage-state">
+          <span class="lab">Κατάσταση χεριού</span>
+          <span class="val" id="hand-state">Ανοιχτό</span>
+        </div>
+        <div class="stage-hint">σύρε για περιστροφή</div>
+      </div>
+
+      <div class="readout" id="replay-live" hidden>
+        <canvas class="scope" id="scope" width="900" height="380"></canvas>
+
+        <div class="stack s-8">
+          <div class="rowline"><span class="k">Ισχύς μ · C3</span><span class="k mono" id="mu-c3-v">—</span></div>
+          <div class="conf"><i id="mu-c3" style="background:var(--panel-signal)"></i></div>
+          <div class="rowline"><span class="k">Ισχύς μ · C4</span><span class="k mono" id="mu-c4-v">—</span></div>
+          <div class="conf"><i id="mu-c4" style="background:var(--panel-signal)"></i></div>
+        </div>
+
+        <div class="verdict-box">
+          <div class="vcell">
+            <span class="k">Οδηγία στον συμμετέχοντα</span>
+            <span class="v dim" id="cue-val">—</span>
+          </div>
+          <div class="vcell">
+            <span class="k">Απόφαση ταξινομητή</span>
+            <span class="v dim" id="pred-val">—</span>
+            <div class="conf"><i id="pred-conf"></i></div>
+          </div>
+          <div class="vcell">
+            <span class="k">Εντολή στη σειριακή</span>
+            <span class="v dim mono" id="cmd-val" style="font-size:15px">—</span>
+          </div>
+          <div class="vcell">
+            <span class="k">Τρέχουσα ακρίβεια</span>
+            <span class="v mono" id="acc-val">0 / 0</span>
+            <span class="k" id="trial-val">δοκιμή 1 από 80</span>
+          </div>
+        </div>
+
+        <div class="stack s-8">
+          <span class="k" style="font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2)">Ιστορικό δοκιμών</span>
+          <div class="ribbon" id="ribbon"></div>
+        </div>
+      </div>
+
+      <div class="readout" id="replay-offline">
+        <div class="stack s-16" style="max-width:46ch">
+          <span class="k" style="font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2)">Αναπαραγωγή δοκιμών</span>
+          <p style="font-family:var(--f-ui); font-size:15px; line-height:1.55; color:var(--panel-ink)">Οι κυματομορφές των συμμετεχόντων δεν δημοσιεύονται σε αυτή την έκδοση. Το ΗΕΓ συλλέχθηκε με ενημερωμένη συναίνεση για τη μελέτη και είναι προσωπικό δεδομένο.</p>
+          <p style="font-family:var(--f-ui); font-size:13.5px; line-height:1.55; color:var(--panel-ink-2)">Η ανάλυση που προκύπτει από αυτές παραμένει εδώ: οι καμπύλες ERD στην ενότητα 04 και τα αποτελέσματα και των 14 συμμετεχόντων στην ενότητα 06. Το χέρι δίπλα ανοίγει και κλείνει από τα κουμπιά.</p>
+          <p style="font-family:var(--f-mono); font-size:12px; line-height:1.6; color:var(--panel-ink-2)">Στη ζωντανή επίδειξη ο ταξινομητής εκπαιδεύεται στα runs 1–3 και αποφασίζει πάνω στο run 4:<br>S11 72,5% · S01 60,0% · S02 48,1%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctrls">
+      <button class="btn primary" id="btn-play">▶ Αναπαραγωγή</button>
+      <button class="btn" id="btn-next">Επόμενη δοκιμή</button>
+      <span id="ctrl-replay-note" class="t" hidden style="font-family:var(--f-ui); font-size:12.5px; color:var(--panel-ink-2)">Περιστροφή με σύρσιμο · άνοιγμα και κλείσιμο από τα κουμπιά</span>
+      <span class="t" id="speed-label" style="font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2); margin-inline-start:8px">Ταχύτητα</span>
+      <div class="seg" id="speed-seg">
+        <button data-sp="1" aria-pressed="false">1×</button>
+        <button data-sp="2" aria-pressed="true">2×</button>
+        <button data-sp="4" aria-pressed="false">4×</button>
+      </div>
+      <span class="t" style="font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--panel-ink-2); margin-inline-start:8px">Χέρι</span>
+      <div class="seg" id="hand-seg">
+        <button data-grip="0" aria-pressed="true">Άνοιγμα</button>
+        <button data-grip="1" aria-pressed="false">Κλείσιμο</button>
+      </div>
+      <button class="btn" id="btn-reset" style="margin-inline-start:auto">Μηδενισμός</button>
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:16px; max-width:82ch">Το τρισδιάστατο μοντέλο αναπαράγει τη γεωμετρία του χεριού που κατασκευάστηκε: τρεις φάλαγγες ανά δάχτυλο, δύο στον αντίχειρα, ελατήρια επαναφοράς στις αρθρώσεις και τένοντες που περνούν από την παλάμη προς τον πήχη. Όταν ο ταξινομητής αποφασίσει φαντασία κίνησης, οι τένοντες τραβούν και το χέρι κλείνει, όπως ακριβώς κάνει το φυσικό χέρι όταν λάβει την εντολή <code>min</code>.</p>
+</section>
+
+<section id="apotelesmata" class="wrap">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Τα αποτελέσματα</h2></div>
+  <p class="lede read" style="margin:14px 0 30px">Δύο σχήματα αξιολόγησης δίνουν δύο διαφορετικές απαντήσεις για το ίδιο σύνολο δεδομένων. Η διαφορά τους είναι το κύριο εύρημα της εργασίας.</p>
+
+  <div class="grid-2" style="gap:40px; align-items:start">
+    <div class="stack s-20 body">
+      <p>Το <strong>10-fold cross-validation</strong> ανακατεύει όλες τις δοκιμές και κρατά ένα δέκατο για έλεγχο. Επειδή όμως οι δοκιμές του ίδιου run μοιάζουν μεταξύ τους, ο ταξινομητής έχει ήδη δει κάθε run κατά την εκπαίδευση. Το νούμερο που βγαίνει είναι αισιόδοξο.</p>
+      <p>Το <strong>Leave-One-Run-Out</strong> κρατά ολόκληρο ένα run εκτός εκπαίδευσης. Είναι το σχήμα που αντιστοιχεί στην πραγματική χρήση, όπου ο χρήστης φοράει το ακουστικό και το σύστημα καλείται να δουλέψει σε φρέσκο σήμα.</p>
+      <p>Η μετάβαση από το πρώτο στο δεύτερο κοστίζει κατά μέσο όρο τρεις μονάδες ακρίβειας, αλλά η ζημιά δεν μοιράζεται ισότιμα: για κάποιους συμμετέχοντες είναι αμελητέα, για άλλους καταρρέει τελείως η αποκωδικοποίηση.</p>
+      <div class="callout">
+        <div class="h">Έλεγχος σε επίπεδο ομάδας</div>
+        <p class="note" style="color:var(--ink-2)">Και τα δύο σχήματα ξεπερνούν το επίπεδο τύχης στατιστικά σημαντικά, με μονόπλευρο έλεγχο προσημασμένων βαθμίδων Wilcoxon στους 14 συμμετέχοντες: 10-fold W=105, p&lt;0,001 · LORO W=94, p=0,003. Το φαινόμενο δηλαδή είναι υπαρκτό ακόμη και με το αυστηρό σχήμα.</p>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Πόσο κοστίζει το αυστηρό σχήμα αξιολόγησης</div>
+      <div class="chart-sub">Ακρίβεια ανά συμμετέχοντα με τα δύο σχήματα. Η γραμμή δείχνει την απόσταση μεταξύ τους.</div>
+      <div id="dumbbell"></div>
+      <div class="legend">
+        <span><i style="background:var(--ink-3)"></i>10-fold, καλύτερος από 4 ταξινομητές</span>
+        <span><i style="background:var(--accent)"></i>LORO, γραμμικός διαχωριστής</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack s-16" style="margin-top:44px">
+    <h3>Αναλυτικά ανά συμμετέχοντα</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>Συμμ.</th><th>10-fold</th><th>LORO</th><th>κ</th><th>p</th>
+          <th>Διατήρηση εποχών</th><th>Τάση στα runs</th><th>Ετυμηγορία</th>
+        </tr></thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div>
+    <p class="note">Η ετυμηγορία είναι επιτυχία όταν ο έλεγχος μετάθεσης με 1.000 επαναλήψεις δίνει p&lt;0,05 και ταυτόχρονα η ακρίβεια ξεπερνά το 60% με κ&gt;0,2. Αποτυχία σημαίνει ότι η αποκωδικοποίηση δεν ξεχωρίζει από την τύχη. Το κ είναι ο συντελεστής Cohen, που διορθώνει για συμφωνία που θα προέκυπτε τυχαία.</p>
+  </div>
+</section>
+
+<section id="poiotita" class="wrap">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Μια παγίδα στην ποιότητα του σήματος</h2></div>
+  <div class="grid-2" style="margin-top:20px; gap:40px; align-items:start">
+    <div class="stack s-20 body">
+      <p class="lede">Το ποσοστό εποχών που επιβιώνουν από την απόρριψη τεχνουργημάτων φαινόταν εξαιρετικό σχεδόν παντού. Αποδείχθηκε ότι κρύβει το πρόβλημα αντί να το δείχνει.</p>
+      <p>Ο λόγος είναι η σειρά των πράξεων. Η απόρριψη εφαρμόζεται μετά το ζωνοπερατό φίλτρο και την κοινή μέση αναφορά, που έχουν ήδη αφαιρέσει τις μεγάλες αποκλίσεις συνεχούς συνιστώσας. Ένα κανάλι με κακή επαφή περνάει έτσι τον έλεγχο θριαμβευτικά.</p>
+      <p>Προστέθηκαν δύο έλεγχοι που τρέχουν στο ακατέργαστο σήμα, πριν από κάθε φίλτρο: ποσοστό δειγμάτων που χτυπούν στο όριο του μετατροπέα, και χρόνιο μονόπλευρο offset, δηλαδή κανάλια κολλημένα σε ένα πρόσημο για ολόκληρη τη συνεδρία.</p>
+      <p>Το εύρημα οδήγησε σε αλλαγή στο ίδιο το λογισμικό καταγραφής. Ο έλεγχος τρέχει πλέον αυτόματα αμέσως μετά την καταγραφή βάσης και προειδοποιεί τον πειραματιστή να ξαναδεί την επαφή του ηλεκτροδίου αναφοράς, πριν χαθεί μια ολόκληρη ωριαία συνεδρία.</p>
+    </div>
+    <div class="stack s-16">
+      <div class="chart-card stack s-16">
+        <div>
+          <div class="chart-title">Τι έδειξε ο έλεγχος στο ακατέργαστο σήμα</div>
+          <div class="chart-sub">Και οι 14 συνεδρίες περνούν τον έλεγχο φυσιολογικού φάσματος μετά το φιλτράρισμα. Οι σημάνσεις αφορούν την ποιότητα της καταγραφής, όχι το αν το σήμα είναι ανακτήσιμο.</div>
+        </div>
+        <dl class="deflist">
+          <dt>Μονόπλευρο offset</dt>
+          <dd>S04, S07, S08, S10, S12, S13 &#8212; τουλάχιστον τα έξι από τα οκτώ κανάλια κολλημένα σε ένα πρόσημο για όλη τη συνεδρία. Πιθανότερη αιτία η επαφή του ηλεκτροδίου αναφοράς.</dd>
+          <dt>Κορεσμός</dt>
+          <dd>S01 στο 6,0% των δειγμάτων, S03 στο 3,4%, S14 στο 2,7%, S06 στο 2,4%, S09 στο 1,9%, S05 στο 1,5%. Χαρακτηριστικό διακοπτόμενων τεχνουργημάτων κίνησης.</dd>
+          <dt>Καθαρές</dt>
+          <dd>S02 και S11 &#8212; καμία από τις δύο σημάνσεις.</dd>
+        </dl>
+      </div>
+      <div class="callout">
+        <div class="h">Η σήμανση δεν προδικάζει την απόδοση</div>
+        <p class="note" style="color:var(--ink-2)">Οι S12 και S13 φέρουν μονόπλευρο offset και παρ' όλα αυτά περνούν το LORO. Ο S02 είναι από τις δύο καθαρότερες καταγραφές και αποτυγχάνει κάτω από το επίπεδο τύχης. Οι δύο έλεγχοι απαντούν σε διαφορετικά ερωτήματα και πρέπει να παρουσιάζονται μαζί.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="kataskevi" class="wrap">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Η κατασκευή</h2></div>
+  <p class="lede read" style="margin:14px 0 30px">Το χέρι τυπώθηκε και συναρμολογήθηκε από την αρχή. Η μηχανική του είναι ο λόγος που το τρισδιάστατο μοντέλο παραπάνω κινείται όπως κινείται.</p>
+  <div class="photos">
+    <figure style="margin:0">
+      <img src="__IMG_TENDONS__" alt="Ο σκελετός της παλάμης τυπωμένος σε μαύρο PLA, με τα κόκκινα κορδόνια των τενόντων περασμένα μέσα από τα κανάλια της παλάμης προς τα δάχτυλα." width="1200" height="900">
+      <figcaption>Η παλάμη πριν από το κάλυμμα. Κάθε δάχτυλο τραβιέται από ένα κορδόνι που περνά μέσα από κανάλια στη ραχιαία πλευρά και καταλήγει στον πήχη.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <img src="__IMG_SERVOS__" alt="Ο πήχης ανοιχτός, με τη συστοιχία σερβοκινητήρων στο εσωτερικό και τα καλώδια σήματος και τροφοδοσίας να βγαίνουν από το άνοιγμα." width="1200" height="900">
+      <figcaption>Ο πήχης ανοιχτός. Πέντε σερβοκινητήρες, ένας ανά δάχτυλο, τυλίγουν το κορδόνι και το τραβούν. Η επαναφορά γίνεται από ελατήρια στις αρθρώσεις.</figcaption>
+    </figure>
+  </div>
+  <div class="grid-2" style="margin-top:36px; gap:40px; align-items:start">
+    <dl class="deflist">
+      <dt>Σκελετός</dt><dd>InMoov i2, τρισδιάστατη εκτύπωση σε μαύρο PLA. Τρεις φάλαγγες ανά δάχτυλο, δύο στον αντίχειρα.</dd>
+      <dt>Κίνηση</dt><dd>Πέντε σερβοκινητήρες στον πήχη, ένας ανά δάχτυλο, με οδήγηση από κορδόνι σε ανταγωνισμό με ελατήρια επαναφοράς.</dd>
+      <dt>Έλεγχος</dt><dd>Arduino με οδηγό PCA9685 μέσω I²C. Ομαλή μετάβαση θέσης, ώστε το κλείσιμο να μη γίνεται απότομα.</dd>
+      <dt>Διεπαφή</dt><dd>Σειριακή στα 9600 baud. Η εντολή <code>min</code> κλείνει το χέρι, η <code>mid</code> το ανοίγει.</dd>
+    </dl>
+    <div class="stack s-20 body">
+      <p>Η οδήγηση με κορδόνι σημαίνει ότι ο κινητήρας μπορεί μόνο να τραβήξει. Το άνοιγμα το αναλαμβάνουν τα ελατήρια, γι' αυτό και είναι πάντα λίγο πιο αργό από το κλείσιμο, κάτι που φαίνεται και στο τρισδιάστατο μοντέλο.</p>
+      <p>Το ίδιο σκεπτικό εξηγεί γιατί η εντολή είναι δυαδική. Με οκτώ κανάλια και δύο κλάσεις, το ρεαλιστικό ζητούμενο είναι μια αξιόπιστη διάκριση ανάμεσα σε δύο καταστάσεις, όχι ο ανεξάρτητος έλεγχος πέντε δαχτύλων.</p>
+    </div>
+  </div>
+</section>
+
+<section id="symperasmata" class="wrap">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Τι δείχνει η εργασία</h2></div>
+  <ol class="findings read" style="margin-top:26px">
+    <li><div>
+      <h4>Η αλυσίδα δουλεύει με εξοπλισμό λίγων εκατοντάδων ευρώ</h4>
+      <p>Σε δεδομένα που ο ταξινομητής δεν είχε ξαναδεί, το σύστημα εκτέλεσε σωστά το 72,5% των εντολών για τον καλύτερο συμμετέχοντα. Το φαινόμενο είναι στατιστικά σημαντικό σε επίπεδο ομάδας ακόμη και με το αυστηρό σχήμα αξιολόγησης.</p>
+    </div></li>
+    <li><div>
+      <h4>Το ανακατεμένο cross-validation υπερεκτιμά συστηματικά</h4>
+      <p>Ο S02 βγάζει 58,2% με 10-fold και 46,7% με LORO, κάτω από την τύχη. Το μοντέλο του απλώς προβλέπει σχεδόν πάντα ηρεμία: ο βαθμός F1 είναι 0,28 για τη φαντασία κίνησης έναντι 0,58 για την ηρεμία. Το ανακάτεμα των δοκιμών έκρυβε τελείως αυτή την αποτυχία γενίκευσης.</p>
+    </div></li>
+    <li><div>
+      <h4>Πέντε στους δεκατέσσερις δεν αποκωδικοποιούνται καθόλου</h4>
+      <p>Ποσοστό 36%, πάνω από το 15 έως 30% που αναφέρει η βιβλιογραφία για την αδυναμία χρήσης διεπαφών εγκεφάλου&#8211;υπολογιστή. Με μία μόνο συνεδρία ανά συμμετέχοντα και χωρίς εξοικείωση με το πρωτόκολλο, η διαφορά είναι αναμενόμενη αλλά πρέπει να δηλώνεται.</p>
+    </div></li>
+    <li><div>
+      <h4>Η απόδοση πέφτει μέσα στην ίδια τη συνεδρία</h4>
+      <p>Εννιά από τους δεκατέσσερις δείχνουν φθίνουσα τάση από το πρώτο προς το τέταρτο run, ακόμη και όσοι περνούν συνολικά. Μια ώρα συγκεντρωμένης φαντασίας κίνησης είναι κουραστική, και αυτό μετριέται.</p>
+    </div></li>
+    <li><div>
+      <h4>Η ποιότητα καταγραφής χρειάζεται δικό της έλεγχο</h4>
+      <p>Το ποσοστό επιβίωσης εποχών δεν αρκεί. Ο έλεγχος πρέπει να γίνεται στο ακατέργαστο σήμα και πριν αρχίσει η συνεδρία, όχι στην ανάλυση μετά.</p>
+    </div></li>
+  </ol>
+  <div class="callout read" style="margin-top:34px">
+    <div class="h">Περιορισμοί</div>
+    <p class="note" style="color:var(--ink-2)">Η αξιολόγηση είναι εκτός σύνδεσης: οι δοκιμές αναπαράγονται από τον δίσκο και όχι από ζωντανό ακουστικό, οπότε δεν μετράται η επίδραση της ανατροφοδότησης στον χρήστη. Τα οκτώ κανάλια είναι το ελάχιστο για CSP και περιορίζουν τη χωρική ανάλυση. Κάθε συμμετέχων έδωσε μία μόνο συνεδρία, χωρίς περιθώριο εκμάθησης, και δεν αξιολογήθηκε η σταθερότητα του μοντέλου από μέρα σε μέρα.</p>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="foot-grid">
+    <div class="stack s-8">
+      <div><strong style="color:var(--ink)">Έλεγχος ρομποτικού χεριού μέσω διεπαφής εγκεφάλου&#8211;υπολογιστή βασισμένης σε φαντασία κίνησης</strong></div>
+      <div>Παναγιώτης Λεβεντογιάννης &#183; Επιβλέπων: Αθανάσιος Κούτρας, Επίκουρος Καθηγητής</div>
+      <div>Τμήμα Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών &#183; Πανεπιστήμιο Πελοποννήσου &#183; Πάτρα 2026</div>
+    </div>
+    <div class="mono" style="font-size:11.5px; color:var(--ink-3)">OpenBCI Cyton &#183; MNE-Python &#183; scikit-learn &#183; InMoov i2</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
+<script>
+"use strict";
+const DEMO = /*__DEMO_META__*/{};          // aggregates + per-subject metadata
+const TRIALS_INLINE = /*__DEMO_TRIALS__*/null; // per-trial waveforms, or null when served separately
+const RESULTS = /*__RESULTS__*/[];
+const SUBJECT_ORDER = ["S11","S01","S02"];
+const VERDICT_EL = {PASS:"Επιτυχία", BORDERLINE:"Οριακό", FAIL:"Αποτυχία"};
+const VERDICT_CLS = {PASS:"pass", BORDERLINE:"bord", FAIL:"fail"};
+const TREND_EL = {declining:"φθίνουσα", stable:"σταθερή", improving:"ανοδική"};
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function num(v, d){ return v.toFixed(d).replace(".", ","); }
+function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function el(tag, attrs){
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+/* ══════════════ results table ══════════════ */
+(function buildTable(){
+  const tb = document.getElementById("results-tbody");
+  const frag = document.createDocumentFragment();
+  RESULTS.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td><strong>' + r.id + '</strong></td>' +
+      '<td class="num">' + num(r.kfold,1) + '%</td>' +
+      '<td class="num">' + num(r.loro,1) + '%</td>' +
+      '<td class="num">' + num(r.kappa,2) + '</td>' +
+      '<td class="num">' + (r.p < 0.001 ? "&lt;0,001" : num(r.p,3)) + '</td>' +
+      '<td class="num">' + num(r.ret,1) + '%</td>' +
+      '<td>' + TREND_EL[r.trend] + '</td>' +
+      '<td><span class="chip ' + VERDICT_CLS[r.verdict] + '">' + VERDICT_EL[r.verdict] + '</span></td>';
+    frag.appendChild(tr);
+  });
+  tb.appendChild(frag);
+})();
+
+/* ══════════════ ERD chart ══════════════ */
+(function erdChart(){
+  const host = document.getElementById("erd-chart");
+  const d = DEMO.S11.erd;
+  const W = 520, PL = 44, PR = 12, PH = 128, GAP = 40, HEAD = 20;
+  const H = HEAD + PH + GAP + HEAD + PH + 26;
+  const svg = el("svg", {viewBox: "0 0 " + W + " " + H, class: "chart",
+    role: "img", "aria-label": "Καμπύλες ισχύος του ρυθμού μ για τα κανάλια C3 και C4, με τη φαντασία κίνησης να βυθίζεται κάτω από τη γραμμή βάσης και την ηρεμία να μένει κοντά της."});
+
+  let lo = 0, hi = 0;
+  ["MI_C3","MI_C4","REST_C3","REST_C4"].forEach(k => d[k].forEach(v => { if (v<lo) lo=v; if (v>hi) hi=v; }));
+  const step = 10;
+  lo = Math.floor(lo/step)*step - step; hi = Math.ceil(hi/step)*step;
+  const t0 = d.t[0], t1 = d.t[d.t.length-1];
+  const X = t => PL + (t - t0)/(t1 - t0) * (W - PL - PR);
+
+  function panel(top, ch, title){
+    const Y = v => top + (hi - v)/(hi - lo) * PH;
+    svg.appendChild(el("text", {x: PL, y: top - 7, class: "lbl", "font-weight": "600"})).textContent = title;
+    // classification window
+    svg.appendChild(el("rect", {x: X(0.5), y: top, width: X(3.5)-X(0.5), height: PH,
+      fill: css("--accent"), opacity: "0.06"}));
+    // y grid + labels
+    for (let v = lo; v <= hi; v += step){
+      const isZero = v === 0;
+      svg.appendChild(el("line", {x1: PL, y1: Y(v), x2: W-PR, y2: Y(v),
+        stroke: css(isZero ? "--ink-3" : "--rule-2"), "stroke-width": isZero ? 1 : 1,
+        "stroke-dasharray": isZero ? "3 3" : "none"}));
+      const tx = el("text", {x: PL - 8, y: Y(v) + 3.4, "text-anchor": "end"});
+      tx.textContent = (v > 0 ? "+" : "") + v + "%";
+      svg.appendChild(tx);
+    }
+    // marker at t=0
+    svg.appendChild(el("line", {x1: X(0), y1: top, x2: X(0), y2: top + PH,
+      stroke: css("--ink-3"), "stroke-width": 1.2, "stroke-dasharray": "4 3"}));
+    // x ticks
+    for (let s = -1; s <= 5; s++){
+      const tx = el("text", {x: X(s), y: top + PH + 15, "text-anchor": "middle"});
+      tx.textContent = s + "s";
+      svg.appendChild(tx);
+    }
+    // series
+    [["REST_"+ch, css("--signal")], ["MI_"+ch, css("--accent")]].forEach(([key, color]) => {
+      const pts = d[key].map((v,i) => X(d.t[i]).toFixed(1) + "," + Y(v).toFixed(1)).join(" ");
+      svg.appendChild(el("polyline", {points: pts, fill: "none", stroke: color,
+        "stroke-width": 1.7, "stroke-linejoin": "round", "stroke-linecap": "round"}));
+    });
+  }
+  panel(HEAD, "C3", "C3 · αντίπλευρο ημισφαίριο");
+  panel(HEAD + PH + GAP + HEAD, "C4", "C4 · ομόπλευρο ημισφαίριο");
+  host.appendChild(svg);
+})();
+
+/* ══════════════ k-fold vs LORO dumbbell ══════════════ */
+(function dumbbell(){
+  const host = document.getElementById("dumbbell");
+  const rows = RESULTS.slice().sort((a,b) => b.loro - a.loro);
+  const W = 520, PL = 40, PR = 46, RH = 21, TOP = 26;
+  const H = TOP + rows.length*RH + 12;
+  const lo = 44, hi = 78;
+  const X = v => PL + (v - lo)/(hi - lo) * (W - PL - PR);
+  const svg = el("svg", {viewBox: "0 0 " + W + " " + H, class: "chart",
+    role: "img", "aria-label": "Σύγκριση ακρίβειας 10-fold και LORO για κάθε συμμετέχοντα, ταξινομημένη κατά LORO."});
+
+  for (let v = 45; v <= 75; v += 5){
+    svg.appendChild(el("line", {x1: X(v), y1: TOP - 8, x2: X(v), y2: H - 12,
+      stroke: css("--rule-2"), "stroke-width": 1}));
+    const t = el("text", {x: X(v), y: TOP - 13, "text-anchor": "middle"});
+    t.textContent = v + "%";
+    svg.appendChild(t);
+  }
+  svg.appendChild(el("line", {x1: X(50), y1: TOP - 8, x2: X(50), y2: H - 12,
+    stroke: css("--ink-3"), "stroke-width": 1.2, "stroke-dasharray": "4 3"}));
+  const ct = el("text", {x: X(50), y: H - 2, "text-anchor": "middle", class: "lbl"});
+  ct.textContent = "τύχη";
+  svg.appendChild(ct);
+
+  rows.forEach((r, i) => {
+    const y = TOP + i*RH + RH/2;
+    const lbl = el("text", {x: 4, y: y + 3.4, class: "lbl"});
+    lbl.textContent = r.id;
+    svg.appendChild(lbl);
+    svg.appendChild(el("line", {x1: X(r.kfold), y1: y, x2: X(r.loro), y2: y,
+      stroke: css("--rule"), "stroke-width": 2.5, "stroke-linecap": "round"}));
+    svg.appendChild(el("circle", {cx: X(r.kfold), cy: y, r: 3.4, fill: css("--ink-3")}));
+    svg.appendChild(el("circle", {cx: X(r.loro), cy: y, r: 4.2,
+      fill: css(r.verdict === "PASS" ? "--accent" : "--surface"),
+      stroke: css("--accent"), "stroke-width": 1.6}));
+    const v = el("text", {x: W - PR + 10, y: y + 3.4});
+    v.textContent = num(r.loro,1);
+    svg.appendChild(v);
+  });
+  host.appendChild(svg);
+})();
+</script>
+
+<script>
+"use strict";
+/* ══════════════ InMoov i2 right hand — procedural model ══════════════ */
+const HAND = (function(){
+  const canvas = document.getElementById("hand-canvas");
+  const stage  = canvas.parentElement;
+
+  const renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true, alpha: true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 1, 400);
+  const target = new THREE.Vector3(0, 0.2, 0);
+
+  /* ---------- studio environment (procedural equirect) ---------- */
+  (function buildEnv(){
+    const c = document.createElement("canvas");
+    c.width = 512; c.height = 256;
+    const g = c.getContext("2d");
+    const sky = g.createLinearGradient(0, 0, 0, 256);
+    sky.addColorStop(0.00, "#dfe9ec");
+    sky.addColorStop(0.42, "#8b9ba1");
+    sky.addColorStop(0.55, "#2c3639");
+    sky.addColorStop(1.00, "#0b1011");
+    g.fillStyle = sky; g.fillRect(0, 0, 512, 256);
+    // two soft-box highlights
+    [[130, 66, 96, 40], [372, 88, 74, 30]].forEach(function(b){
+      const rg = g.createRadialGradient(b[0], b[1], 2, b[0], b[1], b[2]);
+      rg.addColorStop(0, "rgba(255,255,255,0.98)");
+      rg.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = rg;
+      g.beginPath(); g.ellipse(b[0], b[1], b[2], b[3], 0, 0, Math.PI*2); g.fill();
+    });
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(tex).texture;
+    tex.dispose(); pmrem.dispose();
+  })();
+
+  /* ---------- lights ---------- */
+  const key = new THREE.DirectionalLight(0xffffff, 2.5);
+  key.position.set(9, 14, 11); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x9dc3d2, 0.9);
+  fill.position.set(-13, 3, 7); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffcbb0, 1.6);
+  rim.position.set(-6, 5, -14); scene.add(rim);
+  scene.add(new THREE.AmbientLight(0xb8c8cc, 0.35));
+
+  /* ---------- printed-plastic layer lines ---------- */
+  const layerBump = (function(){
+    const c = document.createElement("canvas");
+    c.width = 8; c.height = 128;
+    const g = c.getContext("2d");
+    for (let y = 0; y < 128; y++){
+      const v = 128 + Math.sin(y / 128 * Math.PI * 2 * 16) * 52 + (Math.random() - 0.5) * 14;
+      g.fillStyle = "rgb(" + (v|0) + "," + (v|0) + "," + (v|0) + ")";
+      g.fillRect(0, y, 8, 1);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(3, 26);
+    return t;
+  })();
+
+  /* ---------- materials ---------- */
+  const matPLA = new THREE.MeshPhysicalMaterial({
+    color: 0x1a1e20, roughness: 0.58, metalness: 0.0,
+    clearcoat: 0.22, clearcoatRoughness: 0.62,
+    bumpMap: layerBump, bumpScale: 0.016, envMapIntensity: 1.0
+  });
+  const matPLA2 = matPLA.clone(); matPLA2.color = new THREE.Color(0x141819); matPLA2.roughness = 0.66;
+  const matSteel = new THREE.MeshStandardMaterial({color: 0x8a9296, roughness: 0.44, metalness: 0.92, envMapIntensity: 0.75});
+  const matScrew = new THREE.MeshStandardMaterial({color: 0xa8b1b6, roughness: 0.26, metalness: 1.0, envMapIntensity: 1.3});
+  const matCord  = new THREE.MeshStandardMaterial({color: 0xc02a1c, roughness: 0.82, metalness: 0.0, envMapIntensity: 0.7});
+  const WIRE_COLORS = [0xc42a1e, 0xd88a12, 0xd9c33a, 0x2a2e30];
+
+  /* ---------- geometry helpers ---------- */
+  const PERM = new THREE.Matrix4().set(0,0,1,0, 1,0,0,0, 0,1,0,0, 0,0,0,1);
+
+  function roundedRect(len, h, r){
+    const s = new THREE.Shape();
+    s.moveTo(r, -h/2);
+    s.lineTo(len - r, -h/2);
+    s.quadraticCurveTo(len, -h/2, len, -h/2 + r);
+    s.lineTo(len, h/2 - r);
+    s.quadraticCurveTo(len, h/2, len - r, h/2);
+    s.lineTo(r, h/2);
+    s.quadraticCurveTo(0, h/2, 0, h/2 - r);
+    s.lineTo(0, -h/2 + r);
+    s.quadraticCurveTo(0, -h/2, r, -h/2);
+    return s;
+  }
+
+  /* a printed finger link: origin at its proximal hinge, extends +Y */
+  function linkGeo(len, w, th, taper){
+    const geo = new THREE.ExtrudeGeometry(roundedRect(len, th, th * 0.34), {
+      depth: w, bevelEnabled: true, bevelThickness: 0.09, bevelSize: 0.09, bevelSegments: 2, curveSegments: 6
+    });
+    geo.applyMatrix4(PERM);
+    geo.translate(-w/2, 0, 0);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++){
+      const y = p.getY(i);
+      const s = 1 - taper * Math.max(0, Math.min(1, y / len));
+      p.setX(i, p.getX(i) * s);
+      p.setZ(i, p.getZ(i) * s);
+    }
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  function bossGeo(r, w){
+    const g = new THREE.CylinderGeometry(r, r, w, 18);
+    g.rotateZ(Math.PI/2);
+    return g;
+  }
+
+  function helixGeo(R, len, turns, tubeR){
+    const pts = [], N = Math.round(turns * 16);
+    for (let i = 0; i <= N; i++){
+      const u = i/N, a = u * turns * Math.PI * 2;
+      pts.push(new THREE.Vector3(-len/2 + u*len, Math.cos(a)*R, Math.sin(a)*R));
+    }
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N, tubeR, 6, false);
+  }
+
+  const screwGeo = (function(){
+    const g = new THREE.CylinderGeometry(0.19, 0.19, 0.09, 14);
+    g.rotateX(Math.PI/2);
+    return g;
+  })();
+  function addScrew(parent, x, y, z, faceZ){
+    const m = new THREE.Mesh(screwGeo, matScrew);
+    m.position.set(x, y, z);
+    if (faceZ < 0) m.rotation.y = Math.PI;
+    parent.add(m);
+    return m;
+  }
+
+  /* ---------- the assembly ---------- */
+  const arm = new THREE.Group();
+  arm.rotation.set(0.05, 0, -0.15);
+  scene.add(arm);
+
+  /* palm --------------------------------------------------------- */
+  const PALM_TH = 1.55;
+  const palm = new THREE.Group();
+  arm.add(palm);
+  (function buildPalm(){
+    const outline = [
+      [-4.30, 0.90], [-3.95, 2.55], [-3.30, 3.95], [-2.05, 4.30], [-0.85, 4.45],
+      [ 0.40, 4.30], [ 1.55, 3.95], [ 2.60, 3.45], [ 3.45, 2.55], [ 3.62, 1.10],
+      [ 3.40, -1.60], [ 2.95, -3.40], [ 2.15, -4.90], [ 0.00, -5.35], [-2.10, -4.90],
+      [-3.10, -3.60], [-3.90, -1.90], [-4.45, -0.55]
+    ].map(function(p){ return new THREE.Vector2(p[0], p[1]); });
+    const curve = new THREE.SplineCurve(outline);
+    const pts = curve.getPoints(outline.length * 6);
+    const shape = new THREE.Shape(pts);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: PALM_TH, bevelEnabled: true, bevelThickness: 0.30, bevelSize: 0.30,
+      bevelSegments: 3, curveSegments: 4
+    });
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++){
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (z > 0.95){
+        const d = Math.hypot(x * 0.95, (y - 0.2) * 0.72) / 4.6;
+        const bulge = 0.52 * Math.max(0, 1 - d * d) * Math.min(1, (z - 0.95) / 0.85);
+        p.setZ(i, z + bulge);
+      }
+    }
+    geo.translate(0, 0, -PALM_TH/2);
+    geo.computeVertexNormals();
+    palm.add(new THREE.Mesh(geo, matPLA));
+
+    // embossed InMoov wordmark on the dorsal cover
+    const lc = document.createElement("canvas");
+    lc.width = 512; lc.height = 128;
+    const lg = lc.getContext("2d");
+    lg.clearRect(0, 0, 512, 128);
+    lg.fillStyle = "#ffffff";
+    lg.font = "700 76px Helvetica, Arial, sans-serif";
+    lg.textAlign = "center"; lg.textBaseline = "middle";
+    lg.fillText("InMoov", 256, 68);
+    const ltex = new THREE.CanvasTexture(lc);
+    ltex.colorSpace = THREE.SRGBColorSpace;
+    const logo = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.5, 1.12),
+      new THREE.MeshBasicMaterial({map: ltex, transparent: true, opacity: 0.075,
+        color: 0xdfe8ea, depthWrite: false})
+    );
+    logo.position.set(-0.2, -0.5, PALM_TH/2 + 0.86);
+    logo.rotation.z = -Math.PI/2;
+    palm.add(logo);
+
+    [[-3.0, 3.0], [1.9, 3.0], [-2.6, -3.4], [2.0, -3.3], [3.05, 0.4]].forEach(function(s){
+      addScrew(palm, s[0], s[1], PALM_TH/2 + 0.62, 1);
+    });
+  })();
+
+  /* fingers ------------------------------------------------------ */
+  const fingers = [];
+  const FSPEC = [
+    {name:"index",  x:-2.72, y: 3.62, splay: 0.10, lens:[3.95, 2.55, 2.05], w:1.60, th:1.48, lag:0.00},
+    {name:"middle", x:-0.88, y: 4.02, splay: 0.02, lens:[4.30, 2.80, 2.15], w:1.64, th:1.52, lag:0.05},
+    {name:"ring",   x: 0.95, y: 3.80, splay:-0.06, lens:[4.05, 2.65, 2.05], w:1.56, th:1.46, lag:0.10},
+    {name:"pinky",  x: 2.62, y: 3.05, splay:-0.17, lens:[3.25, 2.05, 1.80], w:1.40, th:1.32, lag:0.16}
+  ];
+  const OPEN  = [-0.05, -0.09, -0.07];
+  const CLOSE = [-1.28, -1.60, -1.12];
+
+  function buildFinger(spec){
+    const root = new THREE.Group();
+    root.position.set(spec.x, spec.y, 0);
+    root.rotation.z = spec.splay;
+    root.rotation.x = -0.05;
+    palm.add(root);
+
+    const joints = [], anchors = [];
+    let parent = root;
+    for (let i = 0; i < 3; i++){
+      const len = spec.lens[i];
+      const w  = spec.w  * (1 - i * 0.09);
+      const th = spec.th * (1 - i * 0.11);
+      const j = new THREE.Group();
+      if (i > 0) j.position.y = spec.lens[i-1];
+      parent.add(j);
+
+      const link = new THREE.Mesh(linkGeo(len, w, th, i === 2 ? 0.30 : 0.14), i === 1 ? matPLA2 : matPLA);
+      j.add(link);
+      j.add(new THREE.Mesh(bossGeo(th * 0.50, w * 1.04), matPLA2));
+      if (i < 2) j.add(new THREE.Mesh(helixGeo(th * 0.46 + 0.10, w * 0.44, 5, 0.052), matSteel));
+      const pin = new THREE.Mesh(bossGeo(0.16, w * 1.16), matScrew);
+      j.add(pin);
+
+      if (i === 2){
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.36, 16, 12), matPLA2);
+        tip.position.y = len; tip.scale.set(1, 0.85, 0.95);
+        j.add(tip);
+      }
+      const a0 = new THREE.Object3D(); a0.position.set(0, len * 0.14, -th * 0.60); j.add(a0);
+      const a1 = new THREE.Object3D(); a1.position.set(0, len * 0.90, -th * 0.55); j.add(a1);
+      anchors.push(a0, a1);
+      joints.push(j);
+      parent = j;
+    }
+    const exit = new THREE.Object3D();
+    exit.position.set(spec.x * 0.74, 0.5, -PALM_TH/2 - 0.30);
+    palm.add(exit);
+    const f = {spec: spec, joints: joints, anchors: anchors, exit: exit};
+    fingers.push(f);
+    return f;
+  }
+  FSPEC.forEach(buildFinger);
+
+  /* thumb -------------------------------------------------------- */
+  const thumb = (function(){
+    const root = new THREE.Group();
+    root.position.set(-3.55, -2.15, -0.45);
+    root.rotation.set(-0.25, -0.65, 1.36);
+    palm.add(root);
+
+    const lens = [2.55, 2.75, 2.05], joints = [], anchors = [];
+    let parent = root;
+    for (let i = 0; i < 3; i++){
+      const len = lens[i], w = 1.66 * (1 - i*0.09), th = 1.56 * (1 - i*0.11);
+      const j = new THREE.Group();
+      if (i > 0) j.position.y = lens[i-1];
+      parent.add(j);
+      j.add(new THREE.Mesh(linkGeo(len, w, th, i === 2 ? 0.30 : 0.12), i === 1 ? matPLA2 : matPLA));
+      j.add(new THREE.Mesh(bossGeo(th * 0.50, w * 1.04), matPLA2));
+      if (i > 0) j.add(new THREE.Mesh(helixGeo(th * 0.46 + 0.10, w * 0.42, 5, 0.052), matSteel));
+      j.add(new THREE.Mesh(bossGeo(0.16, w * 1.14), matScrew));
+      if (i === 2){
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.38, 16, 12), matPLA2);
+        tip.position.y = len; tip.scale.set(1, 0.85, 0.95);
+        j.add(tip);
+      }
+      const a0 = new THREE.Object3D(); a0.position.set(0, len*0.14, -th*0.60); j.add(a0);
+      const a1 = new THREE.Object3D(); a1.position.set(0, len*0.90, -th*0.55); j.add(a1);
+      anchors.push(a0, a1);
+      joints.push(j);
+      parent = j;
+    }
+    const exit = new THREE.Object3D();
+    exit.position.set(-2.5, -1.6, -PALM_TH/2 - 0.30);
+    palm.add(exit);
+    const f = {spec: {lag: 0.06}, joints: joints, anchors: anchors, exit: exit,
+               open: [0, -0.10, -0.14], close: [-0.30, -0.85, -0.90]};
+    fingers.push(f);
+    return f;
+  })();
+
+  /* wrist + forearm ---------------------------------------------- */
+  (function buildArm(){
+    const wrist = new THREE.Group();
+    wrist.position.set(0, -5.15, 0);
+    arm.add(wrist);
+
+    const block = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.75, 1.5, 26), matPLA2);
+    block.position.y = -0.5; wrist.add(block);
+    const pin = new THREE.Mesh(bossGeo(0.22, 3.4), matScrew);
+    pin.position.y = -0.5; wrist.add(pin);
+
+    const seg = [[0.0, 1.70], [0.8, 2.08], [2.0, 2.64], [3.8, 3.14], [6.0, 3.42],
+                 [8.2, 3.50], [9.4, 3.44], [9.8, 3.16], [10.1, 2.30], [10.3, 0.85], [10.35, 0.0]];
+    const prof = seg.map(function(s){ return new THREE.Vector2(s[1], -1.2 - s[0]); }).reverse();
+    const fa = new THREE.Mesh(new THREE.LatheGeometry(prof, 48), matPLA);
+    wrist.add(fa);
+
+    // printed shell split line
+    const seam = new THREE.Mesh(new THREE.TorusGeometry(3.30, 0.05, 6, 52), matPLA2);
+    seam.position.y = -6.6; seam.rotation.x = Math.PI/2; wrist.add(seam);
+
+    // servo wiring leaving the shell
+    for (let i = 0; i < 4; i++){
+      const off = (i - 1.5) * 0.42;
+      const c = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(off, -10.9, 1.1),
+        new THREE.Vector3(off * 1.6 + 1.5, -12.6, 2.3),
+        new THREE.Vector3(off * 2 + 3.6, -14.6, 0.9),
+        new THREE.Vector3(off * 2 + 5.0, -17.2, -1.5)
+      ]);
+      const wire = new THREE.Mesh(new THREE.TubeGeometry(c, 26, 0.1, 6, false),
+        new THREE.MeshStandardMaterial({color: WIRE_COLORS[i], roughness: 0.55, metalness: 0.0}));
+      wrist.add(wire);
+    }
+  })();
+
+  /* tendons ------------------------------------------------------ */
+  const tendons = fingers.map(function(f){
+    const m = new THREE.Mesh(new THREE.BufferGeometry(), matCord);
+    m.frustumCulled = false;
+    arm.add(m);
+    return m;
+  });
+  const _v = new THREE.Vector3();
+  function rebuildTendons(){
+    fingers.forEach(function(f, i){
+      const pts = [];
+      f.exit.getWorldPosition(_v); pts.push(_v.clone());
+      arm.worldToLocal(pts[0]);
+      f.anchors.forEach(function(a){
+        a.getWorldPosition(_v);
+        pts.push(arm.worldToLocal(_v.clone()));
+      });
+      const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.35);
+      const old = tendons[i].geometry;
+      tendons[i].geometry = new THREE.TubeGeometry(curve, 46, 0.098, 7, false);
+      old.dispose();
+    });
+  }
+
+  /* ---------- pose ---------- */
+  let grip = 0, gripTarget = 0, lastBuilt = -1;
+  function applyGrip(g){
+    fingers.forEach(function(f){
+      const lag = f.spec.lag || 0;
+      const gi = Math.max(0, Math.min(1, (g - lag) / (1 - lag)));
+      const e  = gi * gi * (3 - 2 * gi);
+      const o  = f.open  || OPEN;
+      const c  = f.close || CLOSE;
+      f.joints.forEach(function(j, k){ j.rotation.x = o[k] + (c[k] - o[k]) * e; });
+    });
+    if (Math.abs(g - lastBuilt) > 0.004){ rebuildTendons(); lastBuilt = g; }
+  }
+  applyGrip(0);
+
+  /* ---------- framing + orbit ---------- */
+  let theta = 1.00, phi = 1.24, radius = 58, autoSpin = false;
+  function place(){
+    camera.position.set(
+      target.x + radius * Math.sin(phi) * Math.sin(theta),
+      target.y + radius * Math.cos(phi),
+      target.z + radius * Math.sin(phi) * Math.cos(theta)
+    );
+    camera.lookAt(target);
+  }
+  function resize(){
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const tan = Math.tan(camera.fov * Math.PI / 360);
+    radius = Math.max(13.6 / tan, 9.4 / (tan * camera.aspect)) * 1.04;
+    camera.updateProjectionMatrix();
+    place();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+
+  let dragging = false, px = 0, py = 0;
+  canvas.addEventListener("pointerdown", function(e){
+    dragging = true; px = e.clientX; py = e.clientY;
+    canvas.classList.add("dragging"); canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", function(e){
+    if (!dragging) return;
+    theta -= (e.clientX - px) * 0.0075;
+    phi = Math.max(0.45, Math.min(2.45, phi - (e.clientY - py) * 0.0065));
+    px = e.clientX; py = e.clientY;
+    place();
+  });
+  function endDrag(e){
+    dragging = false; canvas.classList.remove("dragging");
+    if (e && e.pointerId != null && canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+  }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+
+  /* ---------- loop ---------- */
+  let visible = true;
+  new IntersectionObserver(function(es){ visible = es[0].isIntersecting; },
+    {rootMargin: "120px"}).observe(stage);
+
+  let last = performance.now();
+  function frame(now){
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!visible) return;
+    if (Math.abs(grip - gripTarget) > 0.0008){
+      // closing is servo-driven and brisk; opening waits on the return springs
+      const rate = gripTarget > grip ? 1.45 : 1.05;
+      grip += Math.sign(gripTarget - grip) * Math.min(Math.abs(gripTarget - grip), dt * rate);
+      applyGrip(grip);
+    }
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(frame);
+
+  return {
+    setGrip: function(v){ gripTarget = Math.max(0, Math.min(1, v)); },
+    isClosed: function(){ return gripTarget > 0.5; }
+  };
+})();
+</script>
+
+<script>
+"use strict";
+/* ══════════════ replay engine ══════════════ */
+(function(){
+  const C_MI   = css("--panel-accent");
+  const C_REST = css("--panel-signal");
+  const C_GRID = "#182123";
+  const C_AXIS = "#637577";
+
+  const scope   = document.getElementById("scope");
+  const ctx     = scope.getContext("2d");
+  const elCue   = document.getElementById("cue-val");
+  const elPred  = document.getElementById("pred-val");
+  const elConf  = document.getElementById("pred-conf");
+  const elCmd   = document.getElementById("cmd-val");
+  const elAcc   = document.getElementById("acc-val");
+  const elTrial = document.getElementById("trial-val");
+  const elState = document.getElementById("hand-state");
+  const ribbon  = document.getElementById("ribbon");
+  const btnPlay = document.getElementById("btn-play");
+
+  const S = {key: "S11", d: null, idx: 0, t: 0, playing: false, speed: 2,
+             revealed: false, seen: 0, right: 0, scale: 40, hold: 0};
+
+  const LABEL = {MI: "Φαντασία κίνησης", REST: "Ηρεμία"};
+
+  /* ---------- subject picker ---------- */
+  (function(){
+    const host = document.getElementById("subj-pick");
+    SUBJECT_ORDER.forEach(function(k){
+      const r = RESULTS.find(function(x){ return x.id === k; });
+      const b = document.createElement("button");
+      b.className = "subj";
+      b.type = "button";
+      b.setAttribute("aria-pressed", k === S.key ? "true" : "false");
+      b.dataset.subj = k;
+      b.innerHTML = '<span class="id">' + k + '</span><span class="meta">' +
+        VERDICT_EL[r.verdict] + ' · ' + num(DEMO[k].replay_accuracy * 100, 1) + '% στο run 4</span>';
+      b.addEventListener("click", function(){ selectSubject(k); });
+      host.appendChild(b);
+    });
+  })();
+
+  function selectSubject(k){
+    S.key = k;
+    S.d = DEMO[k];
+    document.querySelectorAll("#subj-pick .subj").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.subj === k ? "true" : "false");
+    });
+    document.getElementById("rig-protocol").textContent =
+      "εκπαίδευση " + S.d.n_train + " δοκιμών από τα runs 1–3 · αναπαραγωγή " + S.d.n_test + " άγνωστων δοκιμών";
+    // amplitude scale: 99th percentile of |µV| over a sample of trials
+    let vals = [];
+    for (let i = 0; i < S.d.trials.length; i += 5){
+      const tr = S.d.trials[i];
+      for (let j = 0; j < tr.C3.length; j += 3) vals.push(Math.abs(tr.C3[j]), Math.abs(tr.C4[j]));
+    }
+    vals.sort(function(a, b){ return a - b; });
+    S.scale = Math.max(80, vals[Math.floor(vals.length * 0.99)] || 400) / 10;
+    buildRibbon();
+    reset(true);
+  }
+
+  function buildRibbon(){
+    ribbon.textContent = "";
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < S.d.trials.length; i++) frag.appendChild(document.createElement("i"));
+    ribbon.appendChild(frag);
+  }
+
+  function reset(showFirst){
+    S.idx = 0; S.t = S.d.t0; S.revealed = false; S.seen = 0; S.right = 0; S.hold = 0;
+    Array.prototype.forEach.call(ribbon.children, function(n){ n.className = ""; });
+    HAND.setGrip(0);
+    elState.textContent = "Ανοιχτό";
+    elState.style.color = C_REST;
+    if (showFirst){
+      for (let k = 0; k < 3 && k < S.d.trials.length; k++){
+        S.t = S.d.t1; reveal();
+        if (k < 2) nextTrial();
+      }
+    }
+    paint();
+  }
+
+  function trial(){ return S.d.trials[S.idx]; }
+
+  function reveal(){
+    if (S.revealed) return;
+    S.revealed = true;
+    const tr = trial();
+    const ok = tr.pred === tr.true;
+    S.seen++; if (ok) S.right++;
+    const conf = tr.pred === "MI" ? tr.pMI : 1 - tr.pMI;
+
+    elPred.textContent = LABEL[tr.pred] + (ok ? "  ✓" : "  ✗");
+    elPred.className = "v " + (tr.pred === "MI" ? "mi" : "rest");
+    elConf.style.width = Math.round(conf * 100) + "%";
+    elConf.style.backgroundColor = tr.pred === "MI" ? C_MI : C_REST;
+    elCmd.textContent = tr.pred === "MI" ? "min" : "mid";
+    elCmd.className = "v mono " + (tr.pred === "MI" ? "mi" : "rest");
+    elCmd.style.fontSize = "15px";
+
+    HAND.setGrip(tr.pred === "MI" ? 1 : 0);
+    elState.textContent = tr.pred === "MI" ? "Κλειστό" : "Ανοιχτό";
+    elState.style.color = tr.pred === "MI" ? C_MI : C_REST;
+
+    const node = ribbon.children[S.idx];
+    if (node) node.className = ok ? "ok" : "no";
+    elAcc.textContent = S.right + " / " + S.seen + "  ·  " + num(S.right / S.seen * 100, 1) + "%";
+  }
+
+  function nextTrial(){
+    S.idx = (S.idx + 1) % S.d.trials.length;
+    if (S.idx === 0){ S.seen = 0; S.right = 0;
+      Array.prototype.forEach.call(ribbon.children, function(n){ n.className = ""; }); }
+    S.t = S.d.t0; S.revealed = false; S.hold = 0;
+    elPred.textContent = "—"; elPred.className = "v dim";
+    elConf.style.width = "0%";
+    elCmd.textContent = "—"; elCmd.className = "v mono dim"; elCmd.style.fontSize = "15px";
+    paint();
+  }
+
+  /* ---------- scope ---------- */
+  function sizeScope(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = scope.clientWidth, h = scope.clientHeight;
+    if (!w || !h) return;
+    scope.width = Math.round(w * dpr);
+    scope.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  new ResizeObserver(function(){ sizeScope(); if (S.d) paint(); }).observe(scope);
+  sizeScope();
+
+  function paint(){
+    const d = S.d, tr = trial();
+    const w = scope.clientWidth, h = scope.clientHeight;
+    if (!w || !h) return;
+    const PL = 34, PR = 10, PT = 8, PB = 18;
+    const X = t => PL + (t - d.t0) / (d.t1 - d.t0) * (w - PL - PR);
+    ctx.clearRect(0, 0, w, h);
+
+    const lanes = [
+      {ch: "C3", cy: PT + (h - PT - PB) * 0.26},
+      {ch: "C4", cy: PT + (h - PT - PB) * 0.76}
+    ];
+    const amp = (h - PT - PB) * 0.21;
+
+    // classification window
+    ctx.fillStyle = "rgba(232,87,74,0.07)";
+    ctx.fillRect(X(0.5), PT, X(3.5) - X(0.5), h - PT - PB);
+
+    // grid
+    ctx.strokeStyle = C_GRID; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let s = -1; s <= 5; s++){ ctx.moveTo(X(s) + 0.5, PT); ctx.lineTo(X(s) + 0.5, h - PB); }
+    lanes.forEach(function(L){ ctx.moveTo(PL, L.cy + 0.5); ctx.lineTo(w - PR, L.cy + 0.5); });
+    ctx.stroke();
+
+    // cue marker
+    ctx.strokeStyle = "rgba(232,87,74,0.75)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(X(0), PT); ctx.lineTo(X(0), h - PB); ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = C_AXIS;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let s = -1; s <= 5; s++) ctx.fillText(s + "s", X(s), h - PB + 4);
+
+    // traces, revealed up to the playhead
+    const n = tr.C3.length;
+    const prog = Math.max(0, Math.min(1, (S.t - d.t0) / (d.t1 - d.t0)));
+    const upto = Math.max(1, Math.round(prog * (n - 1)));
+    lanes.forEach(function(L){
+      const arr = tr[L.ch];
+      ctx.strokeStyle = C_REST; ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (let i = 0; i <= upto; i++){
+        const x = PL + i / (n - 1) * (w - PL - PR);
+        const y = L.cy - (arr[i] / 10) / S.scale * amp;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = C_AXIS;
+      ctx.font = "600 10px ui-monospace, monospace";
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(L.ch, 6, L.cy);
+    });
+
+    // playhead
+    if (prog < 1){
+      const px = PL + prog * (w - PL - PR);
+      ctx.strokeStyle = "rgba(232,239,238,0.85)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px, PT); ctx.lineTo(px, h - PB); ctx.stroke();
+    }
+
+    // scale key
+    ctx.fillStyle = C_AXIS;
+    ctx.font = "9px ui-monospace, monospace";
+    ctx.textAlign = "right"; ctx.textBaseline = "top";
+    ctx.fillText("±" + Math.round(S.scale) + " µV", w - PR, PT);
+
+    // instruction cell + mu meters
+    elCue.textContent = LABEL[tr.true];
+    elCue.className = "v " + (tr.true === "MI" ? "mi" : "rest");
+    elTrial.textContent = "δοκιμή " + (S.idx + 1) + " από " + S.d.trials.length;
+    paintMu(tr, "C3"); paintMu(tr, "C4");
+  }
+
+  function paintMu(tr, ch){
+    const env = tr[ch + "_mu"];
+    if (!env) return;
+    const d = S.d;
+    const nBase = Math.max(1, Math.round(1.0 * d.env_fs));   // −1.5 s … −0.5 s
+    let base = 0;
+    for (let i = 0; i < nBase; i++) base += env[i];
+    base = base / nBase || 1;
+    const i = Math.max(0, Math.min(env.length - 1, Math.round((S.t - d.t0) * d.env_fs)));
+    const win = Math.max(1, Math.round(0.5 * d.env_fs));      // 0,5 s trailing mean
+    let cur = 0, k = 0;
+    for (let j = Math.max(0, i - win + 1); j <= i; j++){ cur += env[j]; k++; }
+    const ratio = (cur / k) / base;
+    const pct = (ratio - 1) * 100;
+    const bar = document.getElementById("mu-" + ch.toLowerCase());
+    const val = document.getElementById("mu-" + ch.toLowerCase() + "-v");
+    bar.style.width = Math.max(2, Math.min(100, ratio / 1.6 * 100)) + "%";
+    bar.style.backgroundColor = pct < -15 ? C_MI : C_REST;
+    val.textContent = (pct >= 0 ? "+" : "") + num(pct, 0) + "% από τη βάση";
+  }
+
+  /* ---------- controls ---------- */
+  function setPlaying(v){
+    S.playing = v;
+    btnPlay.textContent = v ? "⏸ Παύση" : "▶ Αναπαραγωγή";
+  }
+  btnPlay.addEventListener("click", function(){
+    if (!S.playing && S.revealed && S.t >= S.d.t1) nextTrial();
+    setPlaying(!S.playing);
+  });
+  document.getElementById("btn-next").addEventListener("click", function(){ nextTrial(); });
+  document.getElementById("btn-reset").addEventListener("click", function(){ setPlaying(false); reset(true); });
+  document.getElementById("speed-seg").addEventListener("click", function(e){
+    const b = e.target.closest("button"); if (!b) return;
+    S.speed = parseFloat(b.dataset.sp);
+    this.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+  });
+  document.getElementById("hand-seg").addEventListener("click", function(e){
+    const b = e.target.closest("button"); if (!b) return;
+    const g = parseInt(b.dataset.grip, 10);
+    setPlaying(false);
+    HAND.setGrip(g);
+    elState.textContent = g ? "Κλειστό" : "Ανοιχτό";
+    elState.style.color = g ? C_MI : C_REST;
+    this.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+  });
+
+  /* ---------- loop ---------- */
+  let last = performance.now();
+  (function tick(now){
+    requestAnimationFrame(tick);
+    const dt = Math.min(0.06, (now - last) / 1000);
+    last = now;
+    if (!S.playing) return;
+    if (S.t < S.d.t1){
+      S.t = Math.min(S.d.t1, S.t + dt * S.speed);
+      if (S.t >= 3.5) reveal();
+      paint();
+    } else {
+      S.hold += dt * S.speed;
+      if (S.hold > 1.1) nextTrial();
+    }
+  })(last);
+
+  /* ---- boot ---- */
+  function mergeTrials(trials){
+    for (const k in trials) if (DEMO[k]) DEMO[k].trials = trials[k];
+    return SUBJECT_ORDER.every(function(k){ return DEMO[k] && DEMO[k].trials && DEMO[k].trials.length; });
+  }
+  function enableReplay(){
+    document.getElementById("replay-live").hidden = false;
+    document.getElementById("replay-offline").hidden = true;
+    sizeScope();
+    selectSubject("S11");
+  }
+  function replayUnavailable(){
+    document.getElementById("replay-live").hidden = true;
+    document.getElementById("replay-offline").hidden = false;
+    ["subj-pick","subj-label","btn-play","btn-next","btn-reset","speed-seg","speed-label"]
+      .forEach(function(id){ const n = document.getElementById(id); if (n) n.hidden = true; });
+    document.getElementById("ctrl-replay-note").hidden = false;
+    document.getElementById("rig-protocol").textContent = "τρισδιάστατο μοντέλο του χεριού";
+    document.getElementById("demo-lede").textContent =
+      "Το χέρι σε τρεις διαστάσεις, με τη γεωμετρία της κατασκευής που περιγράφεται στην ενότητα 08.";
+    document.getElementById("demo-note").textContent =
+      "Η ζωντανή αναπαραγωγή, όπου καταγεγραμμένο ΗΕΓ περνά μέσα από τον ταξινομητή και οδηγεί το χέρι δοκιμή προς δοκιμή, τρέχει στην έκδοση που συνοδεύει την παρουσίαση. Εδώ μένουν τα αποτελέσματά της: οι καμπύλες ERD στην ενότητα 04 και οι επιδόσεις και των 14 συμμετεχόντων στην ενότητα 06.";
+    HAND.setGrip(0);
+  }
+  if (TRIALS_INLINE){
+    if (mergeTrials(TRIALS_INLINE)) enableReplay(); else replayUnavailable();
+  } else {
+    fetch("demo_data.json")
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(t){ if (t && mergeTrials(t)) enableReplay(); else replayUnavailable(); })
+      .catch(function(){ replayUnavailable(); });
+  }
+})();
+</script>
