@@ -711,83 +711,89 @@ const SFX = (function(){
     return ctx;
   }
 
-  /* One run of the finger servos: motor whine + gear rattle, then the stop. */
+  /* One run of the finger servos. The sound is mostly bandpassed noise —
+     gear mesh and tendon friction — with a faint high whine from the motors
+     sitting on top. Five servos run at once, so the whine is layered and
+     slightly detuned rather than a single clean tone. */
   function servo(closing, dur){
     if (!enabled || !armed) return;
     const c = ensure(); if (!c) return;
     const t = c.currentTime;
     dur = Math.max(0.18, Math.min(1.6, dur || 0.7));
+    const stop = t + dur;
 
-    const out = c.createGain();
-    out.gain.setValueAtTime(0.0001, t);
-    out.gain.exponentialRampToValueAtTime(0.16, t + 0.035);
-    out.gain.setValueAtTime(0.16, t + dur - 0.09);
-    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    out.connect(c.destination);
+    const master = c.createGain();
+    master.gain.setValueAtTime(0.0001, t);
+    master.gain.exponentialRampToValueAtTime(closing ? 0.80 : 0.68, t + 0.022);
+    master.gain.setValueAtTime(closing ? 0.80 : 0.68, stop - 0.06);
+    master.gain.exponentialRampToValueAtTime(0.0001, stop);
+    master.connect(c.destination);
 
-    // gear-tooth chatter: amplitude modulation over the motor tone
+    // gear mesh — the body of the sound
     const am = c.createGain();
-    am.gain.setValueAtTime(0.72, t);
+    am.gain.setValueAtTime(0.80, t);
     const lfo = c.createOscillator();
-    lfo.type = "square";
-    lfo.frequency.setValueAtTime(closing ? 47 : 39, t);
-    lfo.frequency.linearRampToValueAtTime(closing ? 41 : 34, t + dur);
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(closing ? 142 : 116, t);
+    lfo.frequency.linearRampToValueAtTime(closing ? 126 : 102, stop);
     const lfoDepth = c.createGain();
-    lfoDepth.gain.value = 0.28;
+    lfoDepth.gain.value = 0.15;
     lfo.connect(lfoDepth); lfoDepth.connect(am.gain);
-    am.connect(out);
+    am.connect(master);
 
-    const lp = c.createBiquadFilter();
-    lp.type = "lowpass";
-    lp.frequency.setValueAtTime(900, t);
-    lp.frequency.linearRampToValueAtTime(1750, t + 0.09);
-    lp.frequency.linearRampToValueAtTime(1150, t + dur);
-    lp.Q.value = 5.5;
-    lp.connect(am);
+    const bp = c.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(closing ? 1450 : 1200, t);
+    bp.frequency.linearRampToValueAtTime(closing ? 2050 : 1680, t + 0.10);
+    bp.frequency.linearRampToValueAtTime(closing ? 1760 : 1420, stop);
+    bp.Q.value = 2.3;
+    const wg = c.createGain(); wg.gain.value = 0.62;
+    bp.connect(wg); wg.connect(am);
 
-    // the motor itself — closing pulls against the springs, so it sits higher
-    const f0 = closing ? 132 : 108;
-    const osc = c.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(f0 * 0.70, t);
-    osc.frequency.linearRampToValueAtTime(f0, t + 0.07);
-    osc.frequency.linearRampToValueAtTime(f0 * 0.93, t + dur * 0.85);
-    osc.frequency.linearRampToValueAtTime(f0 * 0.62, t + dur);
-    osc.connect(lp);
+    const whirr = c.createBufferSource();
+    whirr.buffer = noiseBuf; whirr.loop = true;
+    whirr.connect(bp);
 
-    // dry friction of the tendon in its channel
-    const noise = c.createBufferSource();
-    noise.buffer = noiseBuf; noise.loop = true;
-    const nBand = c.createBiquadFilter();
-    nBand.type = "bandpass"; nBand.frequency.value = 2100; nBand.Q.value = 0.7;
-    const nGain = c.createGain(); nGain.gain.value = 0.34;
-    noise.connect(nBand); nBand.connect(nGain); nGain.connect(lp);
+    // chassis: a little weight, well under the whirr
+    const lb = c.createBiquadFilter();
+    lb.type = "bandpass"; lb.frequency.value = 360; lb.Q.value = 1.1;
+    const bg = c.createGain(); bg.gain.value = 0.17;
+    const body = c.createBufferSource();
+    body.buffer = noiseBuf; body.loop = true;
+    body.connect(lb); lb.connect(bg); bg.connect(master);
 
-    osc.start(t); lfo.start(t); noise.start(t);
-    osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05); noise.stop(t + dur + 0.05);
+    // the motors themselves
+    const whine = c.createGain(); whine.gain.value = 0.05;
+    whine.connect(master);
+    const base = closing ? 2260 : 1870;
+    [1.0, 1.014, 0.987].forEach(function(k, i){
+      const o = c.createOscillator();
+      o.type = "triangle";
+      o.frequency.setValueAtTime(base * k * 0.84, t);
+      o.frequency.linearRampToValueAtTime(base * k, t + 0.085);
+      o.frequency.linearRampToValueAtTime(base * k * 0.94, t + dur * 0.88);
+      o.frequency.linearRampToValueAtTime(base * k * 0.70, stop);
+      const g = c.createGain(); g.gain.value = i === 0 ? 1 : 0.45;
+      o.connect(g); g.connect(whine);
+      o.start(t + i * 0.011); o.stop(stop + 0.03);
+    });
 
-    // the stop: fingers meeting the palm, or the springs seating the joints
-    const te = t + dur - 0.02;
-    const thump = c.createOscillator();
-    thump.type = "sine";
-    thump.frequency.setValueAtTime(closing ? 96 : 74, te);
-    thump.frequency.exponentialRampToValueAtTime(closing ? 46 : 38, te + 0.10);
-    const tg = c.createGain();
-    tg.gain.setValueAtTime(0.0001, te);
-    tg.gain.exponentialRampToValueAtTime(closing ? 0.20 : 0.11, te + 0.008);
-    tg.gain.exponentialRampToValueAtTime(0.0001, te + 0.13);
-    thump.connect(tg); tg.connect(c.destination);
-    thump.start(te); thump.stop(te + 0.15);
+    whirr.start(t); body.start(t); lfo.start(t);
+    whirr.stop(stop + 0.03); body.stop(stop + 0.03); lfo.stop(stop + 0.03);
 
+    // the stop — plastic seating against plastic, not a drum
+    const te = stop - 0.012;
     const tick = c.createBufferSource();
     tick.buffer = noiseBuf;
     const tf = c.createBiquadFilter();
-    tf.type = "highpass"; tf.frequency.value = 1400;
-    const tgn = c.createGain();
-    tgn.gain.setValueAtTime(closing ? 0.11 : 0.06, te);
-    tgn.gain.exponentialRampToValueAtTime(0.0001, te + 0.055);
-    tick.connect(tf); tf.connect(tgn); tgn.connect(c.destination);
-    tick.start(te); tick.stop(te + 0.06);
+    tf.type = "bandpass";
+    tf.frequency.value = closing ? 820 : 1080;
+    tf.Q.value = 1.5;
+    const tg = c.createGain();
+    tg.gain.setValueAtTime(closing ? 0.30 : 0.16, te);
+    tg.gain.exponentialRampToValueAtTime(0.0001, te + 0.055);
+    tick.connect(tf); tf.connect(tg); tg.connect(c.destination);
+    tick.start(te); tick.stop(te + 0.07);
   }
 
   return {
