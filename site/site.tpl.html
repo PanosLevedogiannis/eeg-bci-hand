@@ -961,6 +961,8 @@ const HAND = (function(){
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 1, 400);
@@ -972,15 +974,18 @@ const HAND = (function(){
     c.width = 512; c.height = 256;
     const g = c.getContext("2d");
     const sky = g.createLinearGradient(0, 0, 0, 256);
-    sky.addColorStop(0.00, "#dfe9ec");
-    sky.addColorStop(0.42, "#8b9ba1");
-    sky.addColorStop(0.55, "#2c3639");
-    sky.addColorStop(1.00, "#0b1011");
+    sky.addColorStop(0.00, "#eef5f7");
+    sky.addColorStop(0.30, "#b9c8ce");
+    sky.addColorStop(0.49, "#5d6d72");
+    sky.addColorStop(0.52, "#20282b");   // horizon line — gives curved parts an edge to catch
+    sky.addColorStop(0.72, "#141b1d");
+    sky.addColorStop(1.00, "#080c0d");
     g.fillStyle = sky; g.fillRect(0, 0, 512, 256);
-    // two soft-box highlights
-    [[130, 66, 96, 40], [372, 88, 74, 30]].forEach(function(b){
+    // four soft boxes of different sizes, so highlights vary as the hand turns
+    [[96, 60, 104, 44, 1.00], [268, 44, 58, 26, 0.85],
+     [386, 96, 80, 34, 0.75], [188, 150, 120, 30, 0.30]].forEach(function(b){
       const rg = g.createRadialGradient(b[0], b[1], 2, b[0], b[1], b[2]);
-      rg.addColorStop(0, "rgba(255,255,255,0.98)");
+      rg.addColorStop(0, "rgba(255,255,255," + b[4] + ")");
       rg.addColorStop(1, "rgba(255,255,255,0)");
       g.fillStyle = rg;
       g.beginPath(); g.ellipse(b[0], b[1], b[2], b[3], 0, 0, Math.PI*2); g.fill();
@@ -994,37 +999,62 @@ const HAND = (function(){
   })();
 
   /* ---------- lights ---------- */
-  const key = new THREE.DirectionalLight(0xffffff, 2.5);
-  key.position.set(9, 14, 11); scene.add(key);
-  const fill = new THREE.DirectionalLight(0x9dc3d2, 0.9);
+  const key = new THREE.DirectionalLight(0xffffff, 2.6);
+  key.position.set(11, 16, 13);
+  key.castShadow = true;
+  key.shadow.mapSize.set(window.innerWidth < 760 ? 1024 : 2048,
+                         window.innerWidth < 760 ? 1024 : 2048);
+  key.shadow.radius = 3.5;
+  key.shadow.bias = -0.0012;
+  key.shadow.normalBias = 0.035;
+  const sc = key.shadow.camera;
+  sc.near = 8; sc.far = 60;
+  sc.left = -13; sc.right = 13; sc.top = 20; sc.bottom = -20;
+  sc.updateProjectionMatrix();
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(0x9dc3d2, 0.85);
   fill.position.set(-13, 3, 7); scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffcbb0, 1.6);
+  const rim = new THREE.DirectionalLight(0xffcbb0, 1.7);
   rim.position.set(-6, 5, -14); scene.add(rim);
-  scene.add(new THREE.AmbientLight(0xb8c8cc, 0.35));
+  scene.add(new THREE.AmbientLight(0xb8c8cc, 0.30));
 
   /* ---------- printed-plastic layer lines ---------- */
   const layerBump = (function(){
     const c = document.createElement("canvas");
-    c.width = 8; c.height = 128;
+    c.width = 4; c.height = 256;
     const g = c.getContext("2d");
-    for (let y = 0; y < 128; y++){
-      const v = 128 + Math.sin(y / 128 * Math.PI * 2 * 16) * 52 + (Math.random() - 0.5) * 14;
-      g.fillStyle = "rgb(" + (v|0) + "," + (v|0) + "," + (v|0) + ")";
-      g.fillRect(0, y, 8, 1);
+    for (let y = 0; y < 256; y++){
+      // a sawtooth rather than a sine: a printed layer has a ridge and a valley,
+      // not a smooth wave, and every few layers sits a little proud
+      const p = (y / 256 * 22) % 1;
+      let v = 96 + (p < 0.72 ? p / 0.72 : 1 - (p - 0.72) / 0.28) * 108;
+      v += (Math.random() - 0.5) * 16 + Math.sin(y / 256 * Math.PI * 2 * 3) * 12;
+      v = Math.max(0, Math.min(255, v)) | 0;
+      g.fillStyle = "rgb(" + v + "," + v + "," + v + ")";
+      g.fillRect(0, y, 4, 1);
     }
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(3, 26);
+    t.repeat.set(2, 34);
+    t.anisotropy = 8;
     return t;
   })();
 
   /* ---------- materials ---------- */
   const matPLA = new THREE.MeshPhysicalMaterial({
-    color: 0x1a1e20, roughness: 0.58, metalness: 0.0,
-    clearcoat: 0.22, clearcoatRoughness: 0.62,
-    bumpMap: layerBump, bumpScale: 0.016, envMapIntensity: 1.0
+    color: 0x191d1f, roughness: 0.67, metalness: 0.0,
+    clearcoat: 0.10, clearcoatRoughness: 0.80,
+    bumpMap: layerBump, bumpScale: 0.052, envMapIntensity: 1.05
   });
-  const matPLA2 = matPLA.clone(); matPLA2.color = new THREE.Color(0x141819); matPLA2.roughness = 0.66;
+  const matPLA2 = matPLA.clone();
+  matPLA2.color = new THREE.Color(0x131718); matPLA2.roughness = 0.74; matPLA2.bumpScale = 0.040;
+  // the fingertips are capped in red, as on the built hand
+  const matTip = new THREE.MeshPhysicalMaterial({
+    color: 0x8e1c14, roughness: 0.72, metalness: 0.0,
+    clearcoat: 0.12, clearcoatRoughness: 0.7,
+    bumpMap: layerBump, bumpScale: 0.030, envMapIntensity: 0.85
+  });
   const matSteel = new THREE.MeshStandardMaterial({color: 0x8a9296, roughness: 0.44, metalness: 0.92, envMapIntensity: 0.75});
   const matScrew = new THREE.MeshStandardMaterial({color: 0xa8b1b6, roughness: 0.26, metalness: 1.0, envMapIntensity: 1.3});
   const matCord  = new THREE.MeshStandardMaterial({color: 0xc02a1c, roughness: 0.82, metalness: 0.0, envMapIntensity: 0.7});
@@ -1071,13 +1101,28 @@ const HAND = (function(){
     return g;
   }
 
-  function helixGeo(R, len, turns, tubeR){
-    const pts = [], N = Math.round(turns * 16);
+  const _sa = new THREE.Vector3(), _sb = new THREE.Vector3(), _sd = new THREE.Vector3(),
+        _su = new THREE.Vector3(), _sv = new THREE.Vector3(), _up = new THREE.Vector3();
+  function springGeo(a, b, coilR, tubeR, turns){
+    _sd.subVectors(b, a);
+    const L = _sd.length();
+    if (L < 1e-4) return new THREE.BufferGeometry();
+    _sd.divideScalar(L);
+    _up.set(0, 1, 0);
+    if (Math.abs(_sd.dot(_up)) > 0.92) _up.set(1, 0, 0);
+    _su.crossVectors(_sd, _up).normalize();
+    _sv.crossVectors(_sd, _su).normalize();
+    const N = 54, pts = [];
     for (let i = 0; i <= N; i++){
-      const u = i/N, a = u * turns * Math.PI * 2;
-      pts.push(new THREE.Vector3(-len/2 + u*len, Math.cos(a)*R, Math.sin(a)*R));
+      const t = i / N, ang = t * turns * Math.PI * 2;
+      // the last few millimetres at each end are the straight hook, not coil
+      const rr = coilR * (t < 0.07 ? t / 0.07 : t > 0.93 ? (1 - t) / 0.07 : 1);
+      pts.push(new THREE.Vector3().copy(a)
+        .addScaledVector(_sd, L * t)
+        .addScaledVector(_su, Math.cos(ang) * rr)
+        .addScaledVector(_sv, Math.sin(ang) * rr));
     }
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N, tubeR, 6, false);
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), N, tubeR, 5, false);
   }
 
   const screwGeo = (function(){
@@ -1100,6 +1145,12 @@ const HAND = (function(){
 
   /* palm --------------------------------------------------------- */
   const PALM_TH = 1.55;
+  const FSPEC_GEOM = [
+    {x:-2.72, y: 3.62, splay: 0.10, w:1.60},
+    {x:-0.88, y: 4.02, splay: 0.02, w:1.64},
+    {x: 0.95, y: 3.80, splay:-0.06, w:1.56},
+    {x: 2.62, y: 3.05, splay:-0.17, w:1.40}
+  ];
   const palm = new THREE.Group();
   arm.add(palm);
   (function buildPalm(){
@@ -1109,25 +1160,47 @@ const HAND = (function(){
       [ 3.40, -1.60], [ 2.95, -3.40], [ 2.15, -4.90], [ 0.00, -5.35], [-2.10, -4.90],
       [-3.10, -3.60], [-3.90, -1.90], [-4.45, -0.55]
     ].map(function(p){ return new THREE.Vector2(p[0], p[1]); });
-    const curve = new THREE.SplineCurve(outline);
-    const pts = curve.getPoints(outline.length * 6);
-    const shape = new THREE.Shape(pts);
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth: PALM_TH, bevelEnabled: true, bevelThickness: 0.30, bevelSize: 0.30,
-      bevelSegments: 3, curveSegments: 4
-    });
-    const p = geo.attributes.position;
-    for (let i = 0; i < p.count; i++){
-      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-      if (z > 0.95){
-        const d = Math.hypot(x * 0.95, (y - 0.2) * 0.72) / 4.6;
-        const bulge = 0.52 * Math.max(0, 1 - d * d) * Math.min(1, (z - 0.95) / 0.85);
-        p.setZ(i, z + bulge);
+    function palmSlab(scale, dy, depth, bevel, dome, domeR){
+      const pts = new THREE.SplineCurve(outline.map(function(q){
+        return new THREE.Vector2(q.x * scale, (q.y - 0.2) * scale + 0.2 + dy);
+      })).getPoints(outline.length * 6);
+      const g = new THREE.ExtrudeGeometry(new THREE.Shape(pts), {
+        depth: depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel,
+        bevelSegments: 3, curveSegments: 5
+      });
+      if (dome > 0){
+        const a = g.attributes.position, zTop = depth * 0.62;
+        for (let i = 0; i < a.count; i++){
+          const x = a.getX(i), y = a.getY(i), z = a.getZ(i);
+          if (z > zTop){
+            const d = Math.hypot(x * 0.95, (y - 0.2) * 0.72) / domeR;
+            a.setZ(i, z + dome * Math.max(0, 1 - d * d)
+                       * Math.min(1, (z - zTop) / (depth - zTop + bevel)));
+          }
+        }
       }
+      g.computeVertexNormals();
+      return g;
     }
-    geo.translate(0, 0, -PALM_TH/2);
-    geo.computeVertexNormals();
-    palm.add(new THREE.Mesh(geo, matPLA));
+
+    // the frame the fingers bolt to
+    const frame = palmSlab(1.0, 0, PALM_TH, 0.26, 0.10, 5.4);
+    frame.translate(0, 0, -PALM_TH / 2);
+    palm.add(new THREE.Mesh(frame, matPLA2));
+
+    // the cover that carries the wordmark, stepped in from the frame edge
+    const cover = palmSlab(0.845, -0.30, 0.46, 0.20, 0.42, 4.1);
+    cover.translate(0, 0, PALM_TH / 2 - 0.04);
+    palm.add(new THREE.Mesh(cover, matPLA));
+
+    // knuckle brackets, so the fingers grow out of visible structure
+    FSPEC_GEOM.forEach(function(k){
+      const br = new THREE.Mesh(
+        new THREE.BoxGeometry(k.w * 1.22, 1.15, PALM_TH * 1.05), matPLA2);
+      br.position.set(k.x, k.y - 0.62, 0);
+      br.rotation.z = k.splay;
+      palm.add(br);
+    });
 
     // embossed InMoov wordmark on the dorsal cover
     const lc = document.createElement("canvas");
@@ -1141,16 +1214,17 @@ const HAND = (function(){
     const ltex = new THREE.CanvasTexture(lc);
     ltex.colorSpace = THREE.SRGBColorSpace;
     const logo = new THREE.Mesh(
-      new THREE.PlaneGeometry(4.5, 1.12),
+      new THREE.PlaneGeometry(4.0, 1.0),
       new THREE.MeshBasicMaterial({map: ltex, transparent: true, opacity: 0.075,
         color: 0xdfe8ea, depthWrite: false})
     );
-    logo.position.set(-0.2, -0.5, PALM_TH/2 + 0.86);
+    logo.position.set(-0.35, -0.78, PALM_TH/2 + 0.84);
     logo.rotation.z = -Math.PI/2;
     palm.add(logo);
 
-    [[-3.0, 3.0], [1.9, 3.0], [-2.6, -3.4], [2.0, -3.3], [3.05, 0.4]].forEach(function(s){
-      addScrew(palm, s[0], s[1], PALM_TH/2 + 0.62, 1);
+    [[-2.35, 2.05, 0.30], [1.55, 2.05, 0.30], [-2.25, -2.95, 0.20],
+     [1.70, -2.85, 0.20], [2.55, -0.35, 0.26], [-2.90, -0.35, 0.26]].forEach(function(s){
+      addScrew(palm, s[0], s[1], PALM_TH/2 + 0.42 + s[2], 1);
     });
   })();
 
@@ -1172,7 +1246,7 @@ const HAND = (function(){
     root.rotation.x = -0.05;
     palm.add(root);
 
-    const joints = [], anchors = [];
+    const joints = [], anchors = [], dorsal = [];
     let parent = root;
     for (let i = 0; i < 3; i++){
       const len = spec.lens[i];
@@ -1185,25 +1259,27 @@ const HAND = (function(){
       const link = new THREE.Mesh(linkGeo(len, w, th, i === 2 ? 0.30 : 0.14), i === 1 ? matPLA2 : matPLA);
       j.add(link);
       j.add(new THREE.Mesh(bossGeo(th * 0.50, w * 1.04), matPLA2));
-      if (i < 2) j.add(new THREE.Mesh(helixGeo(th * 0.46 + 0.10, w * 0.44, 5, 0.052), matSteel));
       const pin = new THREE.Mesh(bossGeo(0.16, w * 1.16), matScrew);
       j.add(pin);
 
       if (i === 2){
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.36, 16, 12), matPLA2);
-        tip.position.y = len; tip.scale.set(1, 0.85, 0.95);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.355, 18, 14), matTip);
+        tip.position.y = len - 0.04; tip.scale.set(1, 1.05, 0.95);
         j.add(tip);
       }
       const a0 = new THREE.Object3D(); a0.position.set(0, len * 0.14, -th * 0.60); j.add(a0);
       const a1 = new THREE.Object3D(); a1.position.set(0, len * 0.90, -th * 0.55); j.add(a1);
       anchors.push(a0, a1);
+      const d0 = new THREE.Object3D(); d0.position.set(0, len * 0.58, th * 0.54); j.add(d0);
+      const d1 = new THREE.Object3D(); d1.position.set(0, len * 0.42, th * 0.54); j.add(d1);
+      dorsal.push([d0, d1]);
       joints.push(j);
       parent = j;
     }
     const exit = new THREE.Object3D();
     exit.position.set(spec.x * 0.74, 0.5, -PALM_TH/2 - 0.30);
     palm.add(exit);
-    const f = {spec: spec, joints: joints, anchors: anchors, exit: exit};
+    const f = {spec: spec, joints: joints, anchors: anchors, dorsal: dorsal, exit: exit};
     fingers.push(f);
     return f;
   }
@@ -1212,37 +1288,39 @@ const HAND = (function(){
   /* thumb -------------------------------------------------------- */
   const thumb = (function(){
     const root = new THREE.Group();
-    root.position.set(-3.55, -2.15, -0.45);
-    root.rotation.set(-0.25, -0.65, 1.36);
+    root.position.set(-3.45, -1.55, -0.55);
+    root.rotation.set(0.02, -0.72, 0.84);
     palm.add(root);
 
-    const lens = [2.55, 2.75, 2.05], joints = [], anchors = [];
+    const lens = [2.25, 2.55, 1.95], joints = [], anchors = [], dorsal = [];
     let parent = root;
     for (let i = 0; i < 3; i++){
-      const len = lens[i], w = 1.66 * (1 - i*0.09), th = 1.56 * (1 - i*0.11);
+      const len = lens[i], w = 1.76 * (1 - i*0.08), th = 1.66 * (1 - i*0.10);
       const j = new THREE.Group();
       if (i > 0) j.position.y = lens[i-1];
       parent.add(j);
       j.add(new THREE.Mesh(linkGeo(len, w, th, i === 2 ? 0.30 : 0.12), i === 1 ? matPLA2 : matPLA));
       j.add(new THREE.Mesh(bossGeo(th * 0.50, w * 1.04), matPLA2));
-      if (i > 0) j.add(new THREE.Mesh(helixGeo(th * 0.46 + 0.10, w * 0.42, 5, 0.052), matSteel));
       j.add(new THREE.Mesh(bossGeo(0.16, w * 1.14), matScrew));
       if (i === 2){
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.38, 16, 12), matPLA2);
-        tip.position.y = len; tip.scale.set(1, 0.85, 0.95);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(th * 0.365, 18, 14), matTip);
+        tip.position.y = len - 0.04; tip.scale.set(1, 1.05, 0.95);
         j.add(tip);
       }
       const a0 = new THREE.Object3D(); a0.position.set(0, len*0.14, -th*0.60); j.add(a0);
       const a1 = new THREE.Object3D(); a1.position.set(0, len*0.90, -th*0.55); j.add(a1);
       anchors.push(a0, a1);
+      const d0 = new THREE.Object3D(); d0.position.set(0, len*0.58, th*0.54); j.add(d0);
+      const d1 = new THREE.Object3D(); d1.position.set(0, len*0.42, th*0.54); j.add(d1);
+      dorsal.push([d0, d1]);
       joints.push(j);
       parent = j;
     }
     const exit = new THREE.Object3D();
     exit.position.set(-2.5, -1.6, -PALM_TH/2 - 0.30);
     palm.add(exit);
-    const f = {spec: {lag: 0.06}, joints: joints, anchors: anchors, exit: exit,
-               open: [0, -0.10, -0.14], close: [-0.30, -0.85, -0.90]};
+    const f = {spec: {lag: 0.06}, joints: joints, anchors: anchors, dorsal: dorsal, exit: exit,
+               open: [0, -0.12, -0.16], close: [-0.26, -0.80, -0.86]};
     fingers.push(f);
     return f;
   })();
@@ -1253,10 +1331,14 @@ const HAND = (function(){
     wrist.position.set(0, -5.15, 0);
     arm.add(wrist);
 
-    const block = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.75, 1.5, 26), matPLA2);
-    block.position.y = -0.5; wrist.add(block);
-    const pin = new THREE.Mesh(bossGeo(0.22, 3.4), matScrew);
-    pin.position.y = -0.5; wrist.add(pin);
+    const block = new THREE.Mesh(new THREE.CylinderGeometry(1.62, 1.82, 1.35, 30), matPLA2);
+    block.position.y = -0.42; wrist.add(block);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(1.92, 1.92, 0.62, 30), matPLA);
+    collar.position.y = -1.32; wrist.add(collar);
+    const collarLip = new THREE.Mesh(new THREE.TorusGeometry(1.90, 0.055, 6, 40), matPLA2);
+    collarLip.position.y = -1.62; collarLip.rotation.x = Math.PI/2; wrist.add(collarLip);
+    const pin = new THREE.Mesh(bossGeo(0.22, 3.5), matScrew);
+    pin.position.y = -0.42; wrist.add(pin);
 
     const seg = [[0.0, 1.70], [0.8, 2.08], [2.0, 2.64], [3.8, 3.14], [6.0, 3.42],
                  [8.2, 3.50], [9.4, 3.44], [9.8, 3.16], [10.1, 2.30], [10.3, 0.85], [10.35, 0.0]];
@@ -1349,9 +1431,18 @@ const HAND = (function(){
       wrist.add(new THREE.Mesh(geo, mat));
     })();
 
-    // printed shell split line
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(3.30, 0.05, 6, 52), matPLA2);
-    seam.position.y = -6.6; seam.rotation.x = Math.PI/2; wrist.add(seam);
+    // the shell is printed in sections; the joins show as rings
+    [[-3.55, 3.02], [-6.60, 3.30], [-9.10, 3.36]].forEach(function(r){
+      const seam = new THREE.Mesh(new THREE.TorusGeometry(r[1], 0.048, 6, 54), matPLA2);
+      seam.position.y = r[0]; seam.rotation.x = Math.PI/2; wrist.add(seam);
+    });
+    [[-4.4, 0.9], [-7.9, -0.6]].forEach(function(sc){
+      const scr = new THREE.Mesh(screwGeo, matScrew);
+      const r = shellRadius(sc[0]) + 0.02;
+      scr.position.set(Math.sin(sc[1]) * r, sc[0], Math.cos(sc[1]) * r);
+      scr.lookAt(scr.position.clone().multiplyScalar(2));
+      wrist.add(scr);
+    });
 
     // servo wiring leaving the shell
     for (let i = 0; i < 4; i++){
@@ -1375,7 +1466,28 @@ const HAND = (function(){
     arm.add(m);
     return m;
   });
-  const _v = new THREE.Vector3();
+
+  // one extension spring across each joint, on the back of the finger
+  const springs = [];
+  fingers.forEach(function(f){
+    for (let k = 0; k < f.dorsal.length - 1; k++){
+      const m = new THREE.Mesh(new THREE.BufferGeometry(), matSteel);
+      m.frustumCulled = false;
+      arm.add(m);
+      springs.push({mesh: m, a: f.dorsal[k][1], b: f.dorsal[k + 1][0]});
+    }
+  });
+
+  const _v = new THREE.Vector3(), _w = new THREE.Vector3();
+  function rebuildSprings(){
+    springs.forEach(function(sp){
+      sp.a.getWorldPosition(_v); arm.worldToLocal(_v);
+      sp.b.getWorldPosition(_w); arm.worldToLocal(_w);
+      const old = sp.mesh.geometry;
+      sp.mesh.geometry = springGeo(_v, _w, 0.145, 0.032, 13);
+      old.dispose();
+    });
+  }
   function rebuildTendons(){
     fingers.forEach(function(f, i){
       const pts = [];
@@ -1390,7 +1502,12 @@ const HAND = (function(){
       tendons[i].geometry = new THREE.TubeGeometry(curve, 46, 0.098, 7, false);
       old.dispose();
     });
+    rebuildSprings();
   }
+
+  arm.traverse(function(o){
+    if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; }
+  });
 
   /* ---------- pose ---------- */
   let grip = 0, gripTarget = 0, lastBuilt = -1;
