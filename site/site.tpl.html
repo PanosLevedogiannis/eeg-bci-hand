@@ -685,10 +685,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
       <div>Παναγιώτης Λεβεντογιάννης &#183; Επιβλέπων: Αθανάσιος Κούτρας, Επίκουρος Καθηγητής</div>
       <div>Τμήμα Ηλεκτρολόγων Μηχανικών και Μηχανικών Υπολογιστών &#183; Πανεπιστήμιο Πελοποννήσου &#183; Πάτρα 2026</div>
     </div>
-    <div class="stack s-8" style="align-items:flex-end; text-align:end">
-      <div class="mono" style="font-size:11.5px; color:var(--ink-3)">OpenBCI Cyton &#183; MNE-Python &#183; scikit-learn &#183; InMoov i2</div>
-      <div style="font-size:11.5px; color:var(--ink-3)"><!--__ANALYTICS_NOTE__--></div>
-    </div>
+    <div class="mono" style="font-size:11.5px; color:var(--ink-3)">OpenBCI Cyton &#183; MNE-Python &#183; scikit-learn &#183; InMoov i2</div>
   </div>
 </footer>
 
@@ -1282,27 +1279,38 @@ const HAND = (function(){
 
     /* maker's mark, raised on the forearm shell */
     (function makerMark(){
-      const TEXT = "#createdbyLevedogiannis";
+      // two lines: 23 characters in one line on an arm this size leaves the
+      // glyphs too small to read, stacking them doubles their height
+      const LINES = ["#createdby", "Levedogiannis"];
+      const SPAN = 5.9;          // how far it runs along the arm
+      const FAM = "px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+      // size the canvas to the text so the band is all glyph and no padding
       const cv = document.createElement("canvas");
-      cv.width = 2048; cv.height = 312;
-      const g = cv.getContext("2d");
+      cv.width = 3072;
+      let g = cv.getContext("2d");
+      let fs = 400;
+      g.font = "800 " + fs + FAM;
+      let widest = 0;
+      LINES.forEach(function(L){ widest = Math.max(widest, g.measureText(L).width); });
+      fs = Math.floor(fs * (cv.width * 0.96) / widest);
+      cv.height = Math.round(fs * 2.42);
+
+      g = cv.getContext("2d");
       g.fillStyle = "#000"; g.fillRect(0, 0, cv.width, cv.height);
       g.fillStyle = "#fff";
+      g.font = "800 " + fs + FAM;
       g.textAlign = "center"; g.textBaseline = "middle";
-      try { g.letterSpacing = "10px"; } catch (e) {}
-      g.font = "700 186px 'Helvetica Neue', Helvetica, Arial, sans-serif";
-      let w = g.measureText(TEXT).width;
-      if (w > cv.width * 0.94){
-        g.font = "700 " + Math.floor(186 * cv.width * 0.94 / w) + "px 'Helvetica Neue', Helvetica, Arial, sans-serif";
-      }
-      g.fillText(TEXT, cv.width / 2, cv.height / 2 + 4);
+      LINES.forEach(function(L, i){
+        g.fillText(L, cv.width / 2, cv.height * (i === 0 ? 0.285 : 0.715));
+      });
 
       const tex = new THREE.CanvasTexture(cv);
       tex.anisotropy = 8;
 
-      // a patch that follows the cone, text running along the arm
-      const yA = -2.7, yB = -7.3, ARC = 0.70, NY = 48, NA = 8, LIFT = 0.06;
-      const ANG = 1.02;                     // faces the default camera angle
+      // a patch that follows the cone; the arc matches the canvas so nothing distorts
+      const yA = -2.1, yB = yA - SPAN, ARC = SPAN * cv.height / cv.width;
+      const NY = 60, NA = 10, LIFT = 0.07, ANG = 1.02;
       const pos = [], uv = [], idx = [];
       for (let i = 0; i <= NY; i++){
         const u = i / NY;
@@ -1328,13 +1336,15 @@ const HAND = (function(){
       geo.setIndex(idx);
       geo.computeVertexNormals();
 
-      // the glyphs are cut out and bump-lit, so they read as raised plastic
+      // glyphs cut out by alpha test and lit through a bump map, so they read as
+      // raised second-colour plastic rather than a printed decal
       const mat = new THREE.MeshPhysicalMaterial({
-        color: 0x353d40, roughness: 0.46, metalness: 0.0,
-        clearcoat: 0.35, clearcoatRoughness: 0.45,
+        color: 0xd6dee0, roughness: 0.40, metalness: 0.0,
+        clearcoat: 0.30, clearcoatRoughness: 0.40,
         alphaMap: tex, alphaTest: 0.42,
-        bumpMap: tex, bumpScale: 0.13,
-        envMapIntensity: 1.35, side: THREE.DoubleSide
+        bumpMap: tex, bumpScale: 0.16,
+        emissive: 0x232a2d, emissiveIntensity: 1.0,
+        envMapIntensity: 1.25, side: THREE.DoubleSide
       });
       wrist.add(new THREE.Mesh(geo, mat));
     })();
