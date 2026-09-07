@@ -7,12 +7,13 @@ Two builds from one template:
       published as the private Artifact and shared with the committee.
 
   python3 site/build_site.py --pages         -> docs/index.html
-      For GitHub Pages. NO participant waveforms in the page. The demo asks
-      for demo_data.json at runtime and degrades to the 3D hand alone when
-      it is absent. Add the waveforms only after the consent question in
-      site/DATA_NOTICE.md is settled:
+      For GitHub Pages. The page itself carries no waveforms; it asks for
+      demo_data.json at runtime and degrades to the 3D hand alone when that
+      file is absent.
 
-          python3 site/build_site.py --pages --with-trials
+  python3 site/build_site.py --pages --with-trials
+      Also writes docs/demo_data.json, the released EEG subset. What it
+      contains and why it is releasable: site/DATA_STATEMENT.md
 
 Aggregate figures (the ERD grand averages, the 14-subject results) are in
 every build — they are summary statistics, not recordings.
@@ -60,7 +61,7 @@ if args.pages:
     data_path = os.path.join(docs, "demo_data.json")
     if args.with_trials:
         json.dump(trials, open(data_path, "w", encoding="utf-8"), separators=(",", ":"))
-        print("wrote", data_path, "— PARTICIPANT WAVEFORMS, read site/DATA_NOTICE.md")
+        print("wrote", data_path, "— PARTICIPANT WAVEFORMS, read site/DATA_STATEMENT.md")
     elif os.path.exists(data_path):
         print("note:", data_path, "already exists and will be served")
 else:

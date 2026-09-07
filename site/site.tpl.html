@@ -212,6 +212,8 @@ svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
   transition:background-color .15s, border-color .15s}
 .btn:hover{background:#263234; border-color:#3B4749}
 .btn.primary{background:var(--panel-accent); border-color:var(--panel-accent); color:#12191A; font-weight:600}
+#btn-sound[aria-pressed="true"]{background:#2A3638; border-color:#3B4749}
+#btn-sound[aria-pressed="false"]{opacity:.55}
 .btn.primary:hover{background:#F0685C; border-color:#F0685C}
 .seg{display:flex; border:1px solid #2C3739; border-radius:3px; overflow:hidden}
 .seg button{font-family:var(--f-mono); font-size:12px; color:var(--panel-ink-2); background:#141D1E;
@@ -539,11 +541,12 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
         <button data-grip="0" aria-pressed="true">Άνοιγμα</button>
         <button data-grip="1" aria-pressed="false">Κλείσιμο</button>
       </div>
+      <button class="btn" id="btn-sound" aria-pressed="true" title="Ήχος σερβοκινητήρων">🔊 Ήχος</button>
       <button class="btn" id="btn-reset" style="margin-inline-start:auto">Μηδενισμός</button>
     </div>
   </div>
 
-  <p class="note" style="margin-top:16px; max-width:82ch">Το τρισδιάστατο μοντέλο αναπαράγει τη γεωμετρία του χεριού που κατασκευάστηκε: τρεις φάλαγγες ανά δάχτυλο, δύο στον αντίχειρα, ελατήρια επαναφοράς στις αρθρώσεις και τένοντες που περνούν από την παλάμη προς τον πήχη. Όταν ο ταξινομητής αποφασίσει φαντασία κίνησης, οι τένοντες τραβούν και το χέρι κλείνει, όπως ακριβώς κάνει το φυσικό χέρι όταν λάβει την εντολή <code>min</code>.</p>
+  <p class="note" style="margin-top:16px; max-width:82ch">Το τρισδιάστατο μοντέλο αναπαράγει τη γεωμετρία του χεριού που κατασκευάστηκε: τρεις φάλαγγες ανά δάχτυλο, δύο στον αντίχειρα, ελατήρια επαναφοράς στις αρθρώσεις και τένοντες που περνούν από την παλάμη προς τον πήχη. Όταν ο ταξινομητής αποφασίσει φαντασία κίνησης, οι τένοντες τραβούν και το χέρι κλείνει, όπως ακριβώς κάνει το φυσικό χέρι όταν λάβει την εντολή <code>min</code>. Ο ήχος των σερβοκινητήρων παράγεται από τη σελίδα τη στιγμή της κίνησης και διαρκεί όσο και η διαδρομή: πιο σύντομος στο κλείσιμο, που το τραβά ο κινητήρας, πιο αργός στο άνοιγμα, που το επιστρέφουν τα ελατήρια.</p>
 </section>
 
 <section id="apotelesmata" class="wrap">
@@ -686,6 +689,123 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
   </div>
 </footer>
 
+<script>
+"use strict";
+/* ══════════════ servo sound — synthesised, no audio files ══════════════ */
+const SFX = (function(){
+  let ctx = null, noiseBuf = null, armed = false;
+  let enabled = true;
+  try { enabled = localStorage.getItem("inmoov-sound") !== "0"; } catch (e) {}
+
+  function ensure(){
+    if (!ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { ctx = new AC(); } catch (e){ return null; }
+      const n = Math.floor(ctx.sampleRate * 0.5);
+      noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  /* One run of the finger servos: motor whine + gear rattle, then the stop. */
+  function servo(closing, dur){
+    if (!enabled || !armed) return;
+    const c = ensure(); if (!c) return;
+    const t = c.currentTime;
+    dur = Math.max(0.18, Math.min(1.6, dur || 0.7));
+
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(0.16, t + 0.035);
+    out.gain.setValueAtTime(0.16, t + dur - 0.09);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    out.connect(c.destination);
+
+    // gear-tooth chatter: amplitude modulation over the motor tone
+    const am = c.createGain();
+    am.gain.setValueAtTime(0.72, t);
+    const lfo = c.createOscillator();
+    lfo.type = "square";
+    lfo.frequency.setValueAtTime(closing ? 47 : 39, t);
+    lfo.frequency.linearRampToValueAtTime(closing ? 41 : 34, t + dur);
+    const lfoDepth = c.createGain();
+    lfoDepth.gain.value = 0.28;
+    lfo.connect(lfoDepth); lfoDepth.connect(am.gain);
+    am.connect(out);
+
+    const lp = c.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.linearRampToValueAtTime(1750, t + 0.09);
+    lp.frequency.linearRampToValueAtTime(1150, t + dur);
+    lp.Q.value = 5.5;
+    lp.connect(am);
+
+    // the motor itself — closing pulls against the springs, so it sits higher
+    const f0 = closing ? 132 : 108;
+    const osc = c.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(f0 * 0.70, t);
+    osc.frequency.linearRampToValueAtTime(f0, t + 0.07);
+    osc.frequency.linearRampToValueAtTime(f0 * 0.93, t + dur * 0.85);
+    osc.frequency.linearRampToValueAtTime(f0 * 0.62, t + dur);
+    osc.connect(lp);
+
+    // dry friction of the tendon in its channel
+    const noise = c.createBufferSource();
+    noise.buffer = noiseBuf; noise.loop = true;
+    const nBand = c.createBiquadFilter();
+    nBand.type = "bandpass"; nBand.frequency.value = 2100; nBand.Q.value = 0.7;
+    const nGain = c.createGain(); nGain.gain.value = 0.34;
+    noise.connect(nBand); nBand.connect(nGain); nGain.connect(lp);
+
+    osc.start(t); lfo.start(t); noise.start(t);
+    osc.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05); noise.stop(t + dur + 0.05);
+
+    // the stop: fingers meeting the palm, or the springs seating the joints
+    const te = t + dur - 0.02;
+    const thump = c.createOscillator();
+    thump.type = "sine";
+    thump.frequency.setValueAtTime(closing ? 96 : 74, te);
+    thump.frequency.exponentialRampToValueAtTime(closing ? 46 : 38, te + 0.10);
+    const tg = c.createGain();
+    tg.gain.setValueAtTime(0.0001, te);
+    tg.gain.exponentialRampToValueAtTime(closing ? 0.20 : 0.11, te + 0.008);
+    tg.gain.exponentialRampToValueAtTime(0.0001, te + 0.13);
+    thump.connect(tg); tg.connect(c.destination);
+    thump.start(te); thump.stop(te + 0.15);
+
+    const tick = c.createBufferSource();
+    tick.buffer = noiseBuf;
+    const tf = c.createBiquadFilter();
+    tf.type = "highpass"; tf.frequency.value = 1400;
+    const tgn = c.createGain();
+    tgn.gain.setValueAtTime(closing ? 0.11 : 0.06, te);
+    tgn.gain.exponentialRampToValueAtTime(0.0001, te + 0.055);
+    tick.connect(tf); tf.connect(tgn); tgn.connect(c.destination);
+    tick.start(te); tick.stop(te + 0.06);
+  }
+
+  return {
+    servo: servo,
+    arm: function(){ armed = true; ensure(); },
+    isOn: function(){ return enabled; },
+    toggle: function(){
+      enabled = !enabled;
+      try { localStorage.setItem("inmoov-sound", enabled ? "1" : "0"); } catch (e) {}
+      if (enabled) ensure();
+      return enabled;
+    }
+  };
+})();
+["pointerdown", "keydown"].forEach(function(ev){
+  window.addEventListener(ev, function once(){ SFX.arm(); }, {once: true});
+});
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
 <script>
 "use strict";
@@ -1260,7 +1380,16 @@ const HAND = (function(){
   requestAnimationFrame(frame);
 
   return {
-    setGrip: function(v){ gripTarget = Math.max(0, Math.min(1, v)); },
+    setGrip: function(v){
+      const nv = Math.max(0, Math.min(1, v));
+      if (Math.abs(nv - gripTarget) < 0.001) return;    // already travelling there
+      gripTarget = nv;
+      const delta = Math.abs(gripTarget - grip);
+      if (delta > 0.02){
+        const closing = gripTarget > grip;
+        SFX.servo(closing, delta / (closing ? 1.45 : 1.05));
+      }
+    },
     isClosed: function(){ return gripTarget > 0.5; }
   };
 })();
@@ -1522,6 +1651,15 @@ const HAND = (function(){
     elState.style.color = g ? C_MI : C_REST;
     this.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
   });
+
+  const btnSound = document.getElementById("btn-sound");
+  function paintSound(){
+    const on = SFX.isOn();
+    btnSound.setAttribute("aria-pressed", on ? "true" : "false");
+    btnSound.textContent = on ? "🔊 Ήχος" : "🔇 Ήχος";
+  }
+  btnSound.addEventListener("click", function(){ SFX.toggle(); paintSound(); });
+  paintSound();
 
   /* ---------- loop ---------- */
   let last = performance.now();

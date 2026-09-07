@@ -46,12 +46,9 @@ __pycache__/
 site/thesis-site.html
 
 # ---------------------------------------------------------------
-# Per-trial participant waveforms exported for the site demo.
-# Same rule as the recordings above: personal data, not for release.
-# Regenerate locally with:
+# Build input for the site demo. Not tracked because it is regenerated:
 #   ./eeg_bci_env/bin/python site/export_demo.py site/assets/demo_data.json S11,S01,S02
-# To publish them deliberately, read site/DATA_NOTICE.md first, then
-#   python3 site/build_site.py --pages --with-trials && git add -f docs/demo_data.json
+# The published subset lives in docs/demo_data.json, which IS tracked.
+# What it contains and why it is releasable: site/DATA_STATEMENT.md
 # ---------------------------------------------------------------
 site/assets/demo_data.json
-docs/demo_data.json
