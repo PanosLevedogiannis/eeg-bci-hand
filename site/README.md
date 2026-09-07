@@ -41,6 +41,26 @@ python3 site/build_site.py --pages --with-trials  # δημόσια, για το 
 Το `assets/results.json` παράγεται από τα `eeg_data/exports/reliability_summary.json`
 και `classification_summary.json`.
 
+## Μέτρηση επισκέψεων
+
+Το GitHub Pages δεν δίνει στατιστικά. Το `Insights → Traffic` του αποθετηρίου
+μετράει επισκέψεις στις σελίδες του github.com, **όχι** στον ιστότοπο.
+
+Η σύνδεση με GoatCounter είναι έτοιμη και χρειάζεται μόνο τον κωδικό σου:
+
+1. Λογαριασμός στο https://www.goatcounter.com — δωρεάν, διαλέγεις μια λέξη ως
+   κωδικό, π.χ. `levedogiannis`.
+2. Ξαναχτίζεις τη δημόσια έκδοση με τον κωδικό:
+   ```bash
+   GOATCOUNTER_CODE=levedogiannis python3 site/build_site.py --pages --with-trials
+   git add docs && git commit -m "Enable visitor counting" && git push
+   ```
+3. Οι επισκέψεις φαίνονται στο `https://levedogiannis.goatcounter.com`.
+
+Χωρίς cookies, χωρίς αποθήκευση διευθύνσεων IP, οπότε δεν χρειάζεται banner
+συγκατάθεσης. Όταν είναι ενεργό, μπαίνει και σχετική σημείωση στο υποσέλιδο.
+Χωρίς τη μεταβλητή δεν προστίθεται κανένα script.
+
 ## Το demo δεν είναι προσομοίωση
 
 Κάθε δοκιμή που παίζει είναι καταγεγραμμένο σήμα και κάθε απόφαση είναι η

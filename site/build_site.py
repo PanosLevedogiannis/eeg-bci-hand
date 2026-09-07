@@ -24,6 +24,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 A = os.path.join(HERE, "assets")
 
+# Visitor counting for the public build. Put your GoatCounter code here — the
+# word you pick when you sign up at https://www.goatcounter.com — and rebuild.
+# Leave it empty and no analytics script is added at all.
+# Dashboard: https://<code>.goatcounter.com
+ANALYTICS_CODE = os.environ.get("GOATCOUNTER_CODE", "")
+
 ap = argparse.ArgumentParser()
 ap.add_argument("--pages", action="store_true", help="build docs/index.html for GitHub Pages")
 ap.add_argument("--with-trials", action="store_true",
@@ -48,11 +54,23 @@ for token, name in (("__IMG_COMPLETE__", "complete.jpg"),
 
 if args.pages:
     html = html.replace("/*__DEMO_TRIALS__*/null", "null")
+    if ANALYTICS_CODE:
+        beacon = ('<script data-goatcounter="https://%s.goatcounter.com/count" '
+                  'async src="//gc.zgo.at/count.js"></script>\n' % ANALYTICS_CODE)
+        html = html.replace("<!--__ANALYTICS_NOTE__-->",
+                            "Μέτρηση επισκέψεων με GoatCounter, χωρίς cookies και χωρίς "
+                            "αποθήκευση διευθύνσεων IP.")
+        print("analytics: counting to https://%s.goatcounter.com" % ANALYTICS_CODE)
+    else:
+        beacon = ""
+        html = html.replace("<!--__ANALYTICS_NOTE__-->", "")
+        print("analytics: none — set GOATCOUNTER_CODE to count visitors "
+              "(see site/README.md)")
     page = ('<!doctype html>\n<html lang="el">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             '<meta name="description" content="Διπλωματική εργασία: έλεγχος του ρομποτικού χεριού InMoov i2 '
             'μέσω διεπαφής εγκεφάλου-υπολογιστή βασισμένης σε φαντασία κίνησης.">\n'
-            + html + "\n</head>\n<body>\n</body>\n</html>\n")
+            + beacon + html + "\n</head>\n<body>\n</body>\n</html>\n")
     docs = os.path.join(ROOT, "docs")
     os.makedirs(docs, exist_ok=True)
     out = os.path.join(docs, "index.html")
@@ -65,6 +83,7 @@ if args.pages:
     elif os.path.exists(data_path):
         print("note:", data_path, "already exists and will be served")
 else:
+    html = html.replace("<!--__ANALYTICS_NOTE__-->", "")
     html = html.replace("/*__DEMO_TRIALS__*/null",
                         json.dumps(trials, ensure_ascii=False, separators=(",", ":")))
     out = os.path.join(HERE, "thesis-site.html")
