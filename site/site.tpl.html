@@ -2212,9 +2212,19 @@ const HAND = (function(){
   /* The camera is the presenter's tool. A visitor to the published page has no
      use for a button that opens their own webcam, so it appears only when the
      page is being served for a presentation: from localhost, or with ?present
-     in the address. */
-  const presenter = ["localhost", "127.0.0.1", "[::1]"].indexOf(location.hostname) >= 0
-                 || new URLSearchParams(location.search).has("present");
+     in the address. ?present is remembered in this browser afterwards, so the
+     plain address keeps it on the presenting machine; ?present=0 clears it. */
+  const presenter = (function(){
+    const local = ["localhost", "127.0.0.1", "[::1]"].indexOf(location.hostname) >= 0;
+    let kept = false;
+    try { kept = localStorage.getItem("inmoov-present") === "1"; } catch(e){}
+    const asked = new URLSearchParams(location.search).get("present");
+    if (asked !== null){
+      kept = asked !== "0" && asked !== "false";
+      try { localStorage.setItem("inmoov-present", kept ? "1" : "0"); } catch(e){}
+    }
+    return local || kept;
+  })();
   let stream = null, devId = null, mirror = false, state = null;
   try {
     devId = localStorage.getItem("inmoov-cam") || null;
