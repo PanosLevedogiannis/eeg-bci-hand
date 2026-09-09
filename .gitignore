@@ -46,6 +46,14 @@ __pycache__/
 site/thesis-site.html
 
 # ---------------------------------------------------------------
+# Build input for the demo clip of the physical hand. Not tracked: it is made
+# from the original recording by site/prepare_video.py, and the published copy
+# is docs/media/hand_demo.mp4, which IS tracked.
+# ---------------------------------------------------------------
+site/assets/hand_demo.mp4
+site/assets/hand_demo.jpg
+
+# ---------------------------------------------------------------
 # Build input for the site demo. Not tracked because it is regenerated:
 #   ./eeg_bci_env/bin/python site/export_demo.py site/assets/demo_data.json S11,S01,S02
 # The published subset lives in docs/demo_data.json, which IS tracked.
