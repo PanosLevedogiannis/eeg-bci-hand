@@ -2263,8 +2263,16 @@ const HAND = (function(){
       const track = stream && stream.getVideoTracks()[0];
       const active = track && track.getSettings ? track.getSettings().deviceId : null;
       if (active) pick.value = active;
-      pick.hidden = cams.length < 2;
+      // shown even for a single camera: which one is running is worth reading,
+      // and a phone that shows up later then lands in a list already on screen
+      pick.hidden = mode !== "cam" || cams.length === 0;
     }).catch(function(){});
+  }
+
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+    navigator.mediaDevices.addEventListener("devicechange", function(){
+      if (mode === "cam" && stream) fillDevices();
+    });
   }
 
   function startCam(){
@@ -2278,6 +2286,11 @@ const HAND = (function(){
       if (mode !== "cam"){ st.getTracks().forEach(function(t){ t.stop(); }); return; }
       stopCam();
       stream = st;
+      st.getVideoTracks().forEach(function(t){
+        t.addEventListener("ended", function(){
+          if (mode === "cam"){ stopCam(); setState("error"); }
+        });
+      });
       cam.srcObject = st;
       cam.hidden = false;
       cam.play().catch(function(){});
