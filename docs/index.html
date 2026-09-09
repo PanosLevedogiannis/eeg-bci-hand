@@ -236,6 +236,15 @@ svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
 .subj .id{font-family:var(--f-mono); font-size:13px; font-weight:700; color:var(--panel-ink); letter-spacing:.03em}
 .subj .meta{font-family:var(--f-ui); font-size:10.5px; color:var(--panel-ink-2); letter-spacing:.02em}
 
+/* ---------- brain in the background ---------- */
+#brain-bg{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:0; pointer-events:none;
+  opacity:.62;                     /* the shader carries most of the restraint */
+}
+/* the page rides above it; the body keeps its own opaque ground */
+.topbar, .hero, section, footer{position:relative; z-index:1}
+
 /* ---------- real hand: recorded video and live camera ---------- */
 .media{background:var(--panel); color:var(--panel-ink); border-radius:5px; overflow:hidden;
   border:1px solid var(--panel-rule); box-shadow:0 24px 60px -30px rgba(0,0,0,.6)}
@@ -291,6 +300,8 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
 .foot-grid{display:flex; flex-wrap:wrap; gap:12px 44px; justify-content:space-between; align-items:flex-end}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; transition-duration:.01ms!important}}
 </style>
+
+<canvas id="brain-bg" aria-hidden="true"></canvas>
 
 <div class="topbar">
   <div class="topbar-in">
@@ -1846,6 +1857,171 @@ const HAND = (function(){
     },
     isClosed: function(){ return gripTarget > 0.5; }
   };
+})();
+</script>
+
+<script>
+"use strict";
+/* ══════════════ the brain behind the page ══════════════
+
+   A point cloud in the shape of a brain, turning slowly, with a wave of
+   brightness crossing it from front to back — the rhythm this thesis is about,
+   not an ornament. It sits under everything at low opacity and never takes a
+   pointer event. Any failure here leaves the page exactly as it was.
+*/
+(function(){
+  const canvas = document.getElementById("brain-bg");
+  if (!canvas || typeof THREE === "undefined") return;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  try {
+    /* ---------- the shape ----------
+       A deformed ellipsoid: longer front to back, flattened underneath, split
+       down the midline, with a temporal bulge, a cerebellum and a stem. The
+       wrinkling comes from summed sines, which reads as gyri at this size. */
+    const N = 4200;
+    const pos = new Float32Array(N * 3);
+    const seed = new Float32Array(N);
+    let i = 0, guard = 0;
+    while (i < N && guard++ < N * 40){
+      const u = Math.random() * 2 - 1;
+      const t = Math.random() * Math.PI * 2;
+      const r = Math.sqrt(1 - u * u);
+      let x = r * Math.cos(t), y = u, z = r * Math.sin(t);
+
+      const cerebellum = Math.random() < 0.14;
+      if (cerebellum){
+        x *= 0.42; y = y * 0.26 - 0.44; z = z * 0.30 - 0.82;
+      } else {
+        const wrinkle = 1
+          + 0.055 * Math.sin(6.0 * Math.atan2(z, x) + 3.0 * y)
+          + 0.040 * Math.sin(7.5 * y + 2.0 * z)
+          + 0.030 * Math.sin(5.0 * x + 4.0 * z);
+        x *= 1.00 * wrinkle; y *= 0.80 * wrinkle; z *= 1.24 * wrinkle;
+        if (y < -0.28) y = -0.28 + (y + 0.28) * 0.50;      // the underside sits flatter
+        if (y < -0.02 && z > -0.30 && z < 0.80)            // temporal lobe
+          x *= 1.12;
+        if (Math.abs(x) < 0.10 && y > 0.15) {               // longitudinal fissure
+          if (Math.random() < 0.75) continue;
+          y -= 0.06;
+        }
+        // the lateral sulcus: the groove that makes a brain read as a brain
+        if (Math.abs(x) > 0.42 && Math.abs(y + 0.06 - 0.20 * -z) < 0.055 && Math.random() < 0.88)
+          continue;
+        // a few sulci across the surface, so the folds show as lines not noise
+        if (Math.sin(7.5 * (y * 1.15 + z * 0.85) + 1.7 * x) > 0.90 && Math.random() < 0.80)
+          continue;
+        if (Math.random() < 0.12){                          // a hint of depth only
+          const k = 0.88 + Math.random() * 0.10;
+          x *= k; y *= k; z *= k;
+        }
+      }
+      if (!cerebellum && Math.random() < 0.02){             // brainstem
+        x *= 0.10; y = -0.45 - Math.random() * 0.45; z = -0.35 + z * 0.10;
+      }
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      seed[i] = Math.random();
+      i++;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos.subarray(0, i * 3), 3));
+    geo.setAttribute("seed", new THREE.BufferAttribute(seed.subarray(0, i), 1));
+
+    const uniforms = {
+      uTime:  {value: 0},
+      uColor: {value: new THREE.Color("#0E6B75")},
+      uAlpha: {value: 0.34},
+      uScale: {value: 1}
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms: uniforms, transparent: true, depthWrite: false,
+      vertexShader: [
+        "attribute float seed;",
+        "uniform float uTime; uniform float uScale;",
+        "varying float vGlow;",
+        "void main(){",
+        // a slow wave travelling back through the cortex, plus per-point drift
+        "  float wave = sin(uTime * 1.15 - position.z * 2.6 + seed * 6.283);",
+        "  vGlow = 0.18 + 0.82 * smoothstep(0.10, 0.95, wave);",
+        "  vec4 mv = modelViewMatrix * vec4(position, 1.0);",
+        "  gl_PointSize = (0.70 + 1.30 * vGlow) * uScale * (30.0 / -mv.z);",
+        "  gl_Position = projectionMatrix * mv;",
+        "}"
+      ].join("\n"),
+      fragmentShader: [
+        "uniform vec3 uColor; uniform float uAlpha;",
+        "varying float vGlow;",
+        "void main(){",
+        "  vec2 d = gl_PointCoord - vec2(0.5);",
+        "  float m = 1.0 - smoothstep(0.28, 0.5, length(d));",   // round, soft dots
+        "  if (m <= 0.0) discard;",
+        "  gl_FragColor = vec4(uColor, uAlpha * m * vGlow);",
+        "}"
+      ].join("\n")
+    });
+
+    const scene = new THREE.Scene();
+    const brain = new THREE.Points(geo, mat);
+    brain.rotation.z = -0.10;
+    scene.add(brain);
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0.42, 4.0);
+    camera.lookAt(0, 0.12, 0);
+
+    const renderer = new THREE.WebGLRenderer({canvas: canvas, alpha: true, antialias: false});
+    renderer.setClearColor(0x000000, 0);
+
+    /* ---------- theme ---------- */
+    function readTheme(){
+      const cs = getComputedStyle(document.documentElement);
+      const dark = matchMedia("(prefers-color-scheme: dark)").matches
+                && document.documentElement.getAttribute("data-theme") !== "light"
+                || document.documentElement.getAttribute("data-theme") === "dark";
+      const token = (cs.getPropertyValue(dark ? "--signal" : "--signal") || "#0E6B75").trim();
+      uniforms.uColor.value = new THREE.Color(token || "#0E6B75");
+      uniforms.uAlpha.value = dark ? 0.26 : 0.20;
+    }
+    readTheme();
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    (mq.addEventListener ? mq.addEventListener.bind(mq, "change") : mq.addListener.bind(mq))(readTheme);
+
+    /* ---------- size ---------- */
+    function resize(){
+      const w = window.innerWidth, h = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // hold the brain to a share of the viewport rather than letting it fill
+      camera.position.z = 4.0 * Math.max(1, 1.35 / (w / h));
+      camera.updateProjectionMatrix();
+      uniforms.uScale.value = Math.min(1.35, Math.max(0.75, h / 900));
+    }
+    resize();
+    window.addEventListener("resize", resize, {passive: true});
+
+    /* ---------- loop, kept cheap ---------- */
+    let last = 0, t0 = performance.now();
+    (function frame(now){
+      requestAnimationFrame(frame);
+      if (now - last < 33) return;                   // ~30fps is plenty back here
+      last = now;
+      const t = (now - t0) / 1000;
+      if (!still){
+        uniforms.uTime.value = t;
+        brain.rotation.y = 0.55 + t * 0.045;
+        brain.rotation.x = Math.sin(t * 0.16) * 0.06;
+      } else {
+        uniforms.uTime.value = 1.2;
+        brain.rotation.y = 0.55;
+      }
+      renderer.render(scene, camera);
+    })(t0);
+  } catch (e){
+    canvas.hidden = true;                            // never let decoration break the page
+  }
 })();
 </script>
 
