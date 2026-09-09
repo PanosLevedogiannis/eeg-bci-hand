@@ -288,7 +288,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
 
 <div class="topbar">
   <div class="topbar-in">
-    <div class="tb-mark">InMoov<span>·</span>ΗΕΓ</div>
+    <div class="tb-mark">InMoov<span>·</span>BCI</div>
     <nav class="tb-nav">
       <a href="#erotima">Το ερώτημα</a>
       <a href="#alysida">Η αλυσίδα</a>
@@ -773,7 +773,7 @@ const I18N = (function(){
   const SEL = ["h1","h2","h3","h4","p","li","dt","dd","th","td","figcaption","button","a",
                "option","text","tspan",".n-i",".spec",".eyebrow",".h",".chart-title",
                ".chart-sub",".lab",".k",".t",".stage-tag",".stage-hint",".foot-grid div",
-               ".legend span"].join(",");
+               ".legend span",".tb-mark",".byline div",".kpi .v"].join(",");
   const ATTRS = ["alt","aria-label","title","placeholder"];
 
   const STR = {
@@ -795,6 +795,7 @@ const I18N = (function(){
     "mu.frombase":      "{v}% από τη βάση",
     "btn.play":         "▶ Αναπαραγωγή",
     "btn.pause":        "⏸ Παύση",
+    "btn.sound.title":  "Ήχος σερβοκινητήρων",
     "btn.sound.on":     "🔊 Ήχος",
     "btn.sound.off":    "🔇 Ήχος",
     "demo.lede.model":  "Το χέρι σε τρεις διαστάσεις, με τη γεωμετρία της κατασκευής που περιγράφεται στην ενότητα 08.",
@@ -881,7 +882,7 @@ const I18N = (function(){
     if (b){
       b.textContent = cur === "en" ? "ΕΛ" : "EN";
       b.setAttribute("lang", cur === "en" ? "el" : "en");
-      b.title = cur === "en" ? "Διάβασε τη σελίδα στα ελληνικά" : "Read this page in English";
+      b.title = cur === "en" ? "Read this page in Greek" : "Διάβασε τη σελίδα στα αγγλικά";
       b.setAttribute("aria-label", b.title);
     }
     window.__i18nMissing = missing;   // read by the build check, harmless otherwise
@@ -2097,6 +2098,7 @@ const HAND = (function(){
     const on = SFX.isOn();
     btnSound.setAttribute("aria-pressed", on ? "true" : "false");
     btnSound.textContent = T(on ? "btn.sound.on" : "btn.sound.off");
+    btnSound.title = T("btn.sound.title");
   }
   btnSound.addEventListener("click", function(){ SFX.toggle(); paintSound(); });
   paintSound();
