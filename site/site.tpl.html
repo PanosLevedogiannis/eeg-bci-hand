@@ -584,9 +584,10 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
     </div>
   </div>
 
-  <div class="stack s-16" style="margin-top:48px">
+  <div class="stack s-16" style="margin-top:48px" id="real-hand">
     <h3>Το πραγματικό χέρι</h3>
-    <p class="note read">Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι: το βίντεο της επίδειξης, και η ζωντανή κάμερα του υπολογιστή για την ώρα της παρουσίασης, ώστε το χέρι να φαίνεται στην ίδια οθόνη με τα δεδομένα.</p>
+    <p class="note read" id="rh-lede">Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι, καταγεγραμμένο την ώρα που ο ταξινομητής έδινε τις εντολές.</p>
+    <p class="note read" id="rh-lede-present" hidden>Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι: το βίντεο της επίδειξης, και η ζωντανή κάμερα για την ώρα της παρουσίασης, ώστε το χέρι να φαίνεται στην ίδια οθόνη με τα δεδομένα.</p>
     <div class="media" id="media">
       <div class="media-bar">
         <div class="seg" id="media-seg">
@@ -605,7 +606,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
         <div class="media-msg" id="media-msg" data-nt hidden></div>
       </div>
     </div>
-    <p class="note" style="max-width:88ch">Η ζωντανή κάμερα ζητά άδεια από τον περιηγητή και δεν στέλνει πουθενά την εικόνα: η ροή μένει μέσα στη σελίδα, στον υπολογιστή που παρουσιάζει. Χρειάζεται σελίδα σε <code>https</code> ή <code>localhost</code>. Την ώρα της παρουσίασης το φυσικό χέρι το οδηγεί το <code>replay_demo.py</code> μέσω της σειριακής, ενώ η κάμερα το δείχνει εδώ.</p>
+    <p class="note" style="max-width:88ch" id="cam-note" hidden>Η ζωντανή κάμερα ζητά άδεια από τον περιηγητή και δεν στέλνει πουθενά την εικόνα: η ροή μένει μέσα στη σελίδα, στον υπολογιστή που παρουσιάζει. Χρειάζεται σελίδα σε <code>https</code> ή <code>localhost</code>. Την ώρα της παρουσίασης το φυσικό χέρι το οδηγεί το <code>replay_demo.py</code> μέσω της σειριακής, ενώ η κάμερα το δείχνει εδώ.</p>
   </div>
 
   <p class="note" style="margin-top:16px; max-width:82ch">Το τρισδιάστατο μοντέλο αναπαράγει τη γεωμετρία του χεριού που κατασκευάστηκε: τρεις φάλαγγες ανά δάχτυλο, δύο στον αντίχειρα, ελατήρια επαναφοράς στις αρθρώσεις και τένοντες που περνούν από την παλάμη προς τον πήχη. Όταν ο ταξινομητής αποφασίσει φαντασία κίνησης, οι τένοντες τραβούν και το χέρι κλείνει, όπως ακριβώς κάνει το φυσικό χέρι όταν λάβει την εντολή <code>min</code>. Ο ήχος των σερβοκινητήρων παράγεται από τη σελίδα τη στιγμή της κίνησης και διαρκεί όσο και η διαδρομή: πιο σύντομος στο κλείσιμο, που το τραβά ο κινητήρας, πιο αργός στο άνοιγμα, που το επιστρέφουν τα ελατήρια.</p>
@@ -2207,6 +2208,13 @@ const HAND = (function(){
   }
 
   let mode = "none";                  // the camera only ever starts on a click
+
+  /* The camera is the presenter's tool. A visitor to the published page has no
+     use for a button that opens their own webcam, so it appears only when the
+     page is being served for a presentation: from localhost, or with ?present
+     in the address. */
+  const presenter = ["localhost", "127.0.0.1", "[::1]"].indexOf(location.hostname) >= 0
+                 || new URLSearchParams(location.search).has("present");
   let stream = null, devId = null, mirror = false, state = null;
   try {
     devId = localStorage.getItem("inmoov-cam") || null;
@@ -2312,8 +2320,23 @@ const HAND = (function(){
   }
 
   function boot(){
-    if (hasVideo){ setMode("video"); return; }
-    seg.querySelector('[data-media="video"]').hidden = true;   // nothing to show yet
+    const camTab = seg.querySelector('[data-media="cam"]');
+    const vidTab = seg.querySelector('[data-media="video"]');
+    document.getElementById("rh-lede").hidden = presenter;
+    document.getElementById("rh-lede-present").hidden = !presenter;
+    document.getElementById("cam-note").hidden = !presenter;
+    camTab.hidden = !presenter;
+
+    if (!presenter && !hasVideo){
+      document.getElementById("real-hand").hidden = true;      // nothing to show at all
+      return;
+    }
+    if (hasVideo){
+      seg.hidden = !presenter;                                 // one tab is not a choice
+      setMode("video");
+      return;
+    }
+    vidTab.hidden = true;                                      // no clip yet
     vid.hidden = true;
     status.textContent = T("media.tab.none");
     setState("novideo");

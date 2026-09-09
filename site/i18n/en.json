@@ -91,7 +91,6 @@
   "Κλείσιμο": "Close",
   "Μηδενισμός": "Reset",
   "Το πραγματικό χέρι": "The physical hand",
-  "Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι: το βίντεο της επίδειξης, και η ζωντανή κάμερα του υπολογιστή για την ώρα της παρουσίασης, ώστε το χέρι να φαίνεται στην ίδια οθόνη με τα δεδομένα.": "The model above shows what the classifier decides. Here is the same thing on the physical hand: the video of the demo, and the computer's live camera for the presentation itself, so that the hand is on the same screen as the data.",
   "Βίντεο της επίδειξης": "Video of the demo",
   "Ζωντανή κάμερα": "Live camera",
   "Η ζωντανή κάμερα ζητά άδεια από τον περιηγητή και δεν στέλνει πουθενά την εικόνα: η ροή μένει μέσα στη σελίδα, στον υπολογιστή που παρουσιάζει. Χρειάζεται σελίδα σε <code>https</code> ή <code>localhost</code>. Την ώρα της παρουσίασης το φυσικό χέρι το οδηγεί το <code>replay_demo.py</code> μέσω της σειριακής, ενώ η κάμερα το δείχνει εδώ.": "The live camera asks the browser for permission and sends the image nowhere: the stream stays inside the page, on the computer doing the presenting. It needs a page on <code>https</code> or <code>localhost</code>. During the presentation the physical hand is driven by <code>replay_demo.py</code> over the serial port, while the camera shows it here.",
@@ -166,7 +165,9 @@
   "Διάταξη ηλεκτροδίων: C3 και C4 εκατέρωθεν του Cz, με FC3, FCz, FC4 μπροστά και CP3, CP4 πίσω.": "Electrode layout: C3 and C4 on either side of Cz, with FC3, FCz, FC4 in front and CP3, CP4 behind.",
   "Η αλυσίδα": "The chain",
   "Αποτελέσματα": "Results",
-  "Δες το demo ↓": "See the demo &#8595;"
+  "Δες το demo ↓": "See the demo &#8595;",
+  "Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι, καταγεγραμμένο την ώρα που ο ταξινομητής έδινε τις εντολές.": "The model above shows what the classifier decides. Here is the same thing on the physical hand, filmed while the classifier was giving the commands.",
+  "Το μοντέλο παραπάνω δείχνει την απόφαση του ταξινομητή. Εδώ είναι το ίδιο πράγμα στο φυσικό χέρι: το βίντεο της επίδειξης, και η ζωντανή κάμερα για την ώρα της παρουσίασης, ώστε το χέρι να φαίνεται στην ίδια οθόνη με τα δεδομένα.": "The model above shows what the classifier decides. Here is the same thing on the physical hand: the video of the demo, and the live camera for the presentation itself, so that the hand is on the same screen as the data."
  },
  "js": {
   "doc.title": "InMoov hand through EEG",
