@@ -6,7 +6,7 @@
 <style>
 :root{
   --paper:#EDF0EF; --surface:#FFFFFF; --surface-2:#F6F8F7;
-  --ink:#111819; --ink-2:#525E60; --ink-3:#7C8789;
+  --ink:#111819; --ink-2:#525E60; --ink-3:#5E6A6C;
   --rule:#D2D9D8; --rule-2:#E2E7E6;
   --accent:#BE3527; --accent-soft:rgba(190,53,39,.10);
   --signal:#0E6B75; --signal-soft:rgba(14,107,117,.10);
@@ -22,7 +22,7 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --paper:#0B1011; --surface:#121A1B; --surface-2:#0F1617;
-    --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#7E8C8D;
+    --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#93A1A2;
     --rule:#25302F; --rule-2:#1C2525;
     --accent:#E8574A; --accent-soft:rgba(232,87,74,.13);
     --signal:#3FAFB9; --signal-soft:rgba(63,175,185,.13);
@@ -33,7 +33,7 @@
 }
 :root[data-theme="dark"]{
   --paper:#0B1011; --surface:#121A1B; --surface-2:#0F1617;
-  --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#7E8C8D;
+  --ink:#E6EDEC; --ink-2:#A0AEAF; --ink-3:#93A1A2;
   --rule:#25302F; --rule-2:#1C2525;
   --accent:#E8574A; --accent-soft:rgba(232,87,74,.13);
   --signal:#3FAFB9; --signal-soft:rgba(63,175,185,.13);
@@ -79,7 +79,7 @@ h3{font-size:20px; letter-spacing:-.008em}
 .body p+p{margin-top:1.05em}
 .mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
 .ui{font-family:var(--f-ui)}
-.note{font-family:var(--f-ui); font-size:13.5px; line-height:1.55; color:var(--ink-3)}
+.note{font-family:var(--f-ui); font-size:13.5px; line-height:1.55; color:var(--ink-2)}
 strong{font-weight:600}
 em.term{font-style:normal; font-family:var(--f-ui); font-size:.94em; font-weight:500;
   background:var(--signal-soft); padding:.08em .34em; border-radius:3px; color:var(--ink)}
@@ -114,7 +114,7 @@ h1{font-size:clamp(30px,4.6vw,50px); line-height:1.1; letter-spacing:-.025em; fo
 .byline b{display:block; font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
 .hero-fig{margin:0}
 .hero-fig img{width:100%; height:auto; border-radius:3px; box-shadow:var(--shadow)}
-figcaption{font-family:var(--f-ui); font-size:12.5px; line-height:1.5; color:var(--ink-3); margin-top:10px}
+figcaption{font-family:var(--f-ui); font-size:13px; line-height:1.5; color:var(--ink-2); margin-top:10px}
 
 /* ---------- key figures strip ---------- */
 .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--rule);
