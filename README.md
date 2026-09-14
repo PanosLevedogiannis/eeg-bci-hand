@@ -1,4 +1,6 @@
-# EEG-Based Control of the InMoov i2 Robotic Hand
+# Robotic Arm Control through a Brain–Computer Interface Using EEG Motor Imagery
+
+*Έλεγχος Ρομποτικού Βραχίονα μέσω Brain–Computer Interface με χρήση EEG και Νοερών Κινήσεων*
 
 **BSc Thesis — Department of Electronics Engineering**  
 **Supervisor:** Asst. Prof. Athanasios Koutras
@@ -347,5 +349,5 @@ The participant recordings are **not** included in this repository. They are per
 
 ---
 
-*Thesis: "EEG-Based Control of the InMoov i2 Robotic Hand"*  
+*Thesis: "Robotic Arm Control through a Brain–Computer Interface Using EEG Motor Imagery"*  
 *Supervisor: Asst. Prof. Athanasios Koutras*

@@ -128,8 +128,8 @@ if args.pages:
     html = html.replace("/*__DEMO_TRIALS__*/null", "null")
     page = ('<!doctype html>\n<html lang="el">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-            '<meta name="description" content="Διπλωματική εργασία: έλεγχος του ρομποτικού χεριού InMoov i2 '
-            'μέσω διεπαφής εγκεφάλου-υπολογιστή βασισμένης σε φαντασία κίνησης.">\n'
+            '<meta name="description" content="Διπλωματική εργασία: Έλεγχος Ρομποτικού Βραχίονα μέσω '
+            'Brain–Computer Interface με χρήση EEG και Νοερών Κινήσεων (ρομποτικό χέρι InMoov i2).">\n'
             + html + "\n</head>\n<body>\n</body>\n</html>\n")
     docs = os.path.join(ROOT, "docs")
     os.makedirs(docs, exist_ok=True)
