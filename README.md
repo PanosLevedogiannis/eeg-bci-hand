@@ -2,8 +2,8 @@
 
 *Έλεγχος Ρομποτικού Βραχίονα μέσω Brain–Computer Interface με χρήση EEG και Νοερών Κινήσεων*
 
-**BSc Thesis — Department of Electronics Engineering**  
-**Supervisor:** Asst. Prof. Athanasios Koutras
+**Diploma Thesis — Department of Electrical and Computer Engineering, University of the Peloponnese**  
+**Supervisor:** Assoc. Prof. Athanasios Koutras
 
 **▶ Live site: https://panoslevedogiannis.github.io/eeg-bci-hand/** — the protocol, the results for all 14 participants, and an interactive 3D model of the hand.
 
@@ -350,4 +350,4 @@ The participant recordings are **not** included in this repository. They are per
 ---
 
 *Thesis: "Robotic Arm Control through a Brain–Computer Interface Using EEG Motor Imagery"*  
-*Supervisor: Asst. Prof. Athanasios Koutras*
+*Supervisor: Assoc. Prof. Athanasios Koutras*

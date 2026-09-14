@@ -3,8 +3,8 @@
   EEG Motor Imagery Data Collection Paradigm
   Graz-BCI Protocol — Movement vs Rest (2-Class)
 =============================================================================
-  Thesis: EEG-Based Control of the InMoov i2 Robotic Hand
-  Supervisor: Asst. Prof. Athanasios Koutras
+  Thesis: Robotic Arm Control through a Brain–Computer Interface Using EEG Motor Imagery
+  Supervisor: Assoc. Prof. Athanasios Koutras
   Hardware: OpenBCI Cyton (8-channel)
 
   Classification task: Motor Imagery vs Rest
