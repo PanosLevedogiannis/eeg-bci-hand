@@ -18,7 +18,9 @@ Two builds from one template:
 The demo clip of the physical hand (assets/hand_demo.mp4 + hand_demo.jpg, made
 by prepare_video.py) is embedded as a data URI in the self-contained build and
 copied to docs/media/ for Pages. It is optional: without it the panel says so
-and the live camera tab still works.
+and the live camera tab still works. When record_hand.py filmed it, its
+schedule (assets/hand_demo.sync.json) goes in too, and section 05 can play the
+clip in place of the 3D hand with the trials running beside it in step.
 
 English text comes from i18n/en.json, keyed by the normalised Greek. Keys that
 are absent fall back to Greek, and the build reports how many were found.
@@ -46,6 +48,10 @@ POSTER = None
 if VIDEO:
     cand = os.path.splitext(VIDEO)[0] + ".jpg"
     POSTER = cand if os.path.exists(cand) else None
+SYNC = None
+if VIDEO:
+    cand = os.path.splitext(VIDEO)[0] + ".sync.json"
+    SYNC = json.load(open(cand, encoding="utf-8")) if os.path.exists(cand) else None
 
 demo = json.load(open(os.path.join(A, "demo_data.json"), encoding="utf-8"))
 trials = {k: v.pop("trials") for k, v in demo.items()}      # demo is now metadata + ERD only
@@ -120,6 +126,12 @@ elif VIDEO:
               "           or lower the quality with prepare_video.py --preset Preset960x540.")
 else:
     print("note: no demo clip — the panel will say so, the camera tab still works")
+
+if SYNC:
+    html = html.replace("/*__VIDEO_SYNC__*/null", json.dumps(SYNC, separators=(",", ":")))
+    print("video sync: %s, %d trials at %gx" % (SYNC["subject"], SYNC["trials"], SYNC["speed"]))
+elif VIDEO:
+    print("note: no hand_demo.sync.json — the clip plays only in its own panel")
 
 # an absent clip or poster leaves the token empty, which the page reads as absent
 html = html.replace("__VIDEO_SRC__", "").replace("__VIDEO_POSTER__", "")

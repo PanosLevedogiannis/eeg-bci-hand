@@ -180,6 +180,8 @@ svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
   radial-gradient(120% 90% at 50% 18%, #1b2527 0%, #0a1011 62%, #060a0b 100%); min-height:430px}
 #hand-canvas{display:block; width:100%; height:100%; position:absolute; inset:0; touch-action:none; cursor:grab}
 #hand-canvas.dragging{cursor:grabbing}
+#stage-video{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; z-index:1}
+.stage.vid .stage-state{bottom:58px}
 .stage-tag{position:absolute; inset-inline-start:14px; top:12px; z-index:2; pointer-events:none;
   font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em; color:#6E8082; text-transform:uppercase}
 .stage-state{position:absolute; inset-inline-start:14px; bottom:14px; z-index:2; pointer-events:none;
@@ -514,18 +516,24 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
     <div class="rig-bar">
       <span class="t" id="subj-label">Συμμετέχων</span>
       <div class="subj-pick" id="subj-pick" data-nt></div>
+      <div class="seg" id="stage-seg" data-nt hidden>
+        <button type="button" data-stage="model" aria-pressed="true"></button>
+        <button type="button" data-stage="video" aria-pressed="false"></button>
+      </div>
       <span class="t" style="margin-inline-start:auto" id="rig-protocol" data-nt>εκπαίδευση runs 1–3 · αναπαραγωγή run 4</span>
     </div>
 
     <div class="rig-body">
       <div class="stage">
         <canvas id="hand-canvas"></canvas>
-        <div class="stage-tag">InMoov i2 · δεξί χέρι</div>
+        <video id="stage-video" controls playsinline preload="metadata" hidden></video>
+        <div class="stage-tag" id="stage-tag">InMoov i2 · δεξί χέρι</div>
+        <div class="stage-tag" id="stage-tag-vid" data-nt hidden></div>
         <div class="stage-state">
           <span class="lab">Κατάσταση χεριού</span>
           <span class="val" id="hand-state" data-nt>Ανοιχτό</span>
         </div>
-        <div class="stage-hint">σύρε για περιστροφή</div>
+        <div class="stage-hint" id="stage-hint">σύρε για περιστροφή</div>
       </div>
 
       <div class="readout" id="replay-live" hidden>
@@ -807,6 +815,9 @@ const I18N = (function(){
     "btn.play":         "▶ Αναπαραγωγή",
     "btn.pause":        "⏸ Παύση",
     "btn.sound.title":  "Ήχος σερβοκινητήρων",
+    "stage.model":      "Μοντέλο 3D",
+    "stage.video":      "Πραγματικό χέρι",
+    "stage.tag.video":  "InMoov i2 · καταγραφή · ίδιες δοκιμές, ίδιος χρόνος",
     "btn.sound.on":     "🔊 Ήχος",
     "btn.sound.off":    "🔇 Ήχος",
     "demo.lede.model":  "Το χέρι σε τρεις διαστάσεις, με τη γεωμετρία της κατασκευής που περιγράφεται στην ενότητα 08.",
@@ -1053,6 +1064,7 @@ const SFX = (function(){
 const DEMO = /*__DEMO_META__*/{};          // aggregates + per-subject metadata
 const TRIALS_INLINE = /*__DEMO_TRIALS__*/null; // per-trial waveforms, or null when served separately
 const RESULTS = /*__RESULTS__*/[];
+const VIDEO_SYNC = /*__VIDEO_SYNC__*/null;   // record_hand.py schedule of the hand clip, or null
 const SUBJECT_ORDER = ["S11","S01","S02"];
 const VERDICT_CLS = {PASS:"pass", BORDERLINE:"bord", FAIL:"fail"};
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1830,12 +1842,12 @@ const HAND = (function(){
   requestAnimationFrame(frame);
 
   return {
-    setGrip: function(v){
+    setGrip: function(v, silent){
       const nv = Math.max(0, Math.min(1, v));
       if (Math.abs(nv - gripTarget) < 0.001) return;    // already travelling there
       gripTarget = nv;
       const delta = Math.abs(gripTarget - grip);
-      if (delta > 0.02){
+      if (delta > 0.02 && !silent){
         const closing = gripTarget > grip;
         SFX.servo(closing, delta / (closing ? 1.45 : 1.05));
       }
@@ -2032,7 +2044,11 @@ const HAND = (function(){
   const btnPlay = document.getElementById("btn-play");
 
   const S = {key: "S11", d: null, idx: 0, t: 0, playing: false, speed: 2,
-             revealed: false, seen: 0, right: 0, scale: 40, hold: 0, live: false};
+             revealed: false, seen: 0, right: 0, scale: 40, hold: 0, live: false,
+             sync: false, syncKey: null};
+
+  // trial timing, in trial seconds; record_hand.py drives the real hand on the same clock
+  const REVEAL_T = 3.5, HOLD = 1.1;
 
   const LABEL = k => T("label." + k);
 
@@ -2050,7 +2066,10 @@ const HAND = (function(){
       b.innerHTML = '<span class="id">' + k + '</span><span class="meta">' +
         T("subj.meta", {v: T("verdict." + r.verdict),
                         a: num(DEMO[k].replay_accuracy * 100, 1)}) + '</span>';
-      b.addEventListener("click", function(){ selectSubject(k); });
+      b.addEventListener("click", function(){
+        if (S.sync && k !== SYNC.subject) setStage("model");
+        selectSubject(k);
+      });
       host.appendChild(b);
     });
   }
@@ -2115,7 +2134,7 @@ const HAND = (function(){
     elCmd.className = "v mono " + (tr.pred === "MI" ? "mi" : "rest");
     elCmd.style.fontSize = "15px";
 
-    HAND.setGrip(tr.pred === "MI" ? 1 : 0);
+    HAND.setGrip(tr.pred === "MI" ? 1 : 0, S.sync);   // the clip carries its own sound
     elState.textContent = T(tr.pred === "MI" ? "hand.closed" : "hand.open");
     elState.style.color = tr.pred === "MI" ? C_MI : C_REST;
 
@@ -2129,10 +2148,14 @@ const HAND = (function(){
     if (S.idx === 0){ S.seen = 0; S.right = 0;
       Array.prototype.forEach.call(ribbon.children, function(n){ n.className = ""; }); }
     S.t = S.d.t0; S.revealed = false; S.hold = 0;
+    clearVerdict();
+    paint();
+  }
+
+  function clearVerdict(){
     elPred.textContent = "—"; elPred.className = "v dim";
     elConf.style.width = "0%";
     elCmd.textContent = "—"; elCmd.className = "v mono dim"; elCmd.style.fontSize = "15px";
-    paint();
   }
 
   /* ---------- scope ---------- */
@@ -2218,7 +2241,7 @@ const HAND = (function(){
     // instruction cell + mu meters
     elCue.textContent = LABEL(tr.true);
     elCue.className = "v " + (tr.true === "MI" ? "mi" : "rest");
-    elTrial.textContent = T("trial.counter", {i: S.idx + 1, n: S.d.trials.length});
+    elTrial.textContent = T("trial.counter", {i: S.idx + 1, n: S.sync ? SYNC.trials : S.d.trials.length});
     paintMu(tr, "C3"); paintMu(tr, "C4");
   }
 
@@ -2249,11 +2272,19 @@ const HAND = (function(){
     btnPlay.textContent = T(v ? "btn.pause" : "btn.play");
   }
   btnPlay.addEventListener("click", function(){
+    if (S.sync){
+      if (stageVid.paused){ if (stageVid.ended) stageVid.currentTime = 0; stageVid.play(); }
+      else stageVid.pause();
+      return;
+    }
     if (!S.playing && S.revealed && S.t >= S.d.t1) nextTrial();
     setPlaying(!S.playing);
   });
   document.getElementById("btn-next").addEventListener("click", function(){ nextTrial(); });
-  document.getElementById("btn-reset").addEventListener("click", function(){ setPlaying(false); reset(true); });
+  document.getElementById("btn-reset").addEventListener("click", function(){
+    if (S.sync){ stageVid.pause(); stageVid.currentTime = 0; S.syncKey = null; syncFrom(0); return; }
+    setPlaying(false); reset(true);
+  });
   document.getElementById("speed-seg").addEventListener("click", function(e){
     const b = e.target.closest("button"); if (!b) return;
     S.speed = parseFloat(b.dataset.sp);
@@ -2285,14 +2316,15 @@ const HAND = (function(){
     requestAnimationFrame(tick);
     const dt = Math.min(0.06, (now - last) / 1000);
     last = now;
+    if (S.sync){ if (!stageVid.paused) syncFrom(stageVid.currentTime); return; }
     if (!S.playing) return;
     if (S.t < S.d.t1){
       S.t = Math.min(S.d.t1, S.t + dt * S.speed);
-      if (S.t >= 3.5) reveal();
+      if (S.t >= REVEAL_T) reveal();
       paint();
     } else {
       S.hold += dt * S.speed;
-      if (S.hold > 1.1) nextTrial();
+      if (S.hold > HOLD) nextTrial();
     }
   })(last);
 
@@ -2315,6 +2347,106 @@ const HAND = (function(){
     paint();
   });
 
+  /* ---------- the real hand in place of the model ----------
+     The clip was filmed with record_hand.py, which sends each command when the
+     page's trial clock would reach REVEAL_T. So the trial on screen is simply a
+     function of the clip's time, and seeking or pausing the clip moves both. */
+  const handVid  = document.getElementById("hand-video");
+  const clipSrc  = (handVid.dataset.src || "").trim();
+  const SYNC     = VIDEO_SYNC && clipSrc ? VIDEO_SYNC : null;
+  const stage    = document.querySelector(".stage");
+  const stageVid = document.getElementById("stage-video");
+  const stageSeg = document.getElementById("stage-seg");
+  const canvas   = document.getElementById("hand-canvas");
+  const tagModel = document.getElementById("stage-tag");
+  const tagVid   = document.getElementById("stage-tag-vid");
+  const hint     = document.getElementById("stage-hint");
+  const MODEL_ONLY = ["btn-next", "speed-seg", "speed-label", "hand-seg", "btn-sound"];
+
+  function paintStageTexts(){
+    stageSeg.querySelector('[data-stage="model"]').textContent = T("stage.model");
+    stageSeg.querySelector('[data-stage="video"]').textContent = T("stage.video");
+    tagVid.textContent = T("stage.tag.video");
+  }
+
+  function setStage(mode){
+    const vid = mode === "video";
+    if (vid === S.sync) return;
+    stageSeg.querySelectorAll("button").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.stage === mode ? "true" : "false");
+    });
+    setPlaying(false);
+    S.sync = vid;
+    stage.classList.toggle("vid", vid);
+    stageVid.hidden = !vid; canvas.hidden = vid;
+    tagVid.hidden = !vid; tagModel.hidden = vid; hint.hidden = vid;
+    MODEL_ONLY.forEach(function(id){ document.getElementById(id).hidden = vid; });
+    if (vid){
+      handVid.pause();
+      if (!stageVid.getAttribute("src")){
+        stageVid.src = clipSrc;
+        const poster = (handVid.dataset.poster || "").trim();
+        if (poster) stageVid.poster = poster;
+      }
+      if (S.key !== SYNC.subject) selectSubject(SYNC.subject);
+      S.syncKey = null;
+      syncFrom(stageVid.currentTime);
+    } else {
+      stageVid.pause();
+      reset(true);
+    }
+  }
+
+  function syncFrom(vt){
+    const d = S.d, per = (d.t1 - d.t0) + HOLD;
+    const sim = (vt - SYNC.sync_close - SYNC.preroll) * SYNC.speed;
+    let k = 0, w = 0;
+    if (sim >= 0){
+      k = Math.floor(sim / per); w = sim - k * per;
+      if (k >= SYNC.trials){ k = SYNC.trials - 1; w = per; }
+    }
+    const t = Math.min(d.t1, d.t0 + w);
+    const rev = sim >= 0 && t >= REVEAL_T;
+    const key = k + (rev ? "r" : "");
+    if (key !== S.syncKey){                       // a new trial, a verdict, or a seek
+      S.syncKey = key;
+      S.idx = k; S.revealed = false; S.hold = 0; S.seen = 0; S.right = 0;
+      Array.prototype.forEach.call(ribbon.children, function(n, i){
+        if (i >= k){ n.className = ""; return; }
+        const ok = d.trials[i].pred === d.trials[i].true;
+        n.className = ok ? "ok" : "no";
+        S.seen++; if (ok) S.right++;
+      });
+      const held = k > 0 && d.trials[k - 1].pred === "MI";
+      HAND.setGrip(held ? 1 : 0, true);
+      elState.textContent = T(held ? "hand.closed" : "hand.open");
+      elState.style.color = held ? C_MI : C_REST;
+      clearVerdict();
+      elAcc.textContent = S.seen
+        ? S.right + " / " + S.seen + "  ·  " + num(S.right / S.seen * 100, 1) + "%"
+        : "0 / 0";
+      if (rev) reveal();
+    }
+    S.t = t;
+    paint();
+  }
+
+  if (SYNC){
+    stageSeg.addEventListener("click", function(e){
+      const b = e.target.closest("button"); if (b) setStage(b.dataset.stage);
+    });
+    ["play", "pause", "ended"].forEach(function(ev){
+      stageVid.addEventListener(ev, function(){ if (S.sync) setPlaying(!stageVid.paused); });
+    });
+    ["seeked", "loadedmetadata"].forEach(function(ev){
+      stageVid.addEventListener(ev, function(){ if (S.sync) syncFrom(stageVid.currentTime); });
+    });
+    stageVid.addEventListener("play", function(){ handVid.pause(); });
+    handVid.addEventListener("play", function(){ stageVid.pause(); });
+    paintStageTexts();
+    I18N.on(paintStageTexts);
+  }
+
   /* ---- boot ---- */
   function mergeTrials(trials){
     for (const k in trials) if (DEMO[k]) DEMO[k].trials = trials[k];
@@ -2327,6 +2459,7 @@ const HAND = (function(){
     buildPicker();
     sizeScope();
     selectSubject("S11");
+    if (SYNC && DEMO[SYNC.subject]) stageSeg.hidden = false;
   }
   function replayUnavailable(){
     S.live = false;

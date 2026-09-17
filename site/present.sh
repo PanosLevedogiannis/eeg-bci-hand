@@ -17,7 +17,7 @@ if [ ! -f docs/index.html ]; then
 fi
 
 echo "serving docs/ at http://localhost:$PORT  (ctrl-C to stop)"
-python3 -m http.server "$PORT" --directory docs >/dev/null 2>&1 &
+python3 site/serve.py "$PORT" docs >/dev/null 2>&1 &   # with byte ranges, for Safari
 SERVER=$!
 trap 'kill $SERVER 2>/dev/null || true' EXIT INT TERM
 sleep 1

@@ -52,6 +52,7 @@ site/thesis-site.html
 # ---------------------------------------------------------------
 site/assets/hand_demo.mp4
 site/assets/hand_demo.jpg
+site/assets/hand_demo.sync.json
 
 # ---------------------------------------------------------------
 # Build input for the site demo. Not tracked because it is regenerated:

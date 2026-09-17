@@ -10,13 +10,16 @@ page afterwards and the clip is in it:
     python3 site/build_site.py                        # embedded as a data URI
     python3 site/build_site.py --pages --with-trials  # copied to docs/media/
 
-Only tools that ship with macOS are used: avconvert for the transcode (H.264
-in an MPEG-4 container, which every browser plays) and qlmanage for the poster.
-ffmpeg is not needed and is not installed on this machine.
+Only tools that ship with macOS are used: AVFoundation, through
+transcode.swift, for the transcode (H.264 in an MPEG-4 container, which every
+browser plays) and qlmanage for the poster. ffmpeg is not needed and is not
+installed on this machine.
 
-The self-contained build carries the clip inside the HTML, so keep it short.
-Around 30 to 60 seconds is enough to show a few trials, and under 9 MB leaves
-room under the 16 MB an Artifact page is allowed. --duration trims it.
+The self-contained build carries the clip inside the HTML, so keep it small.
+Under 9 MB leaves room under the 16 MB an Artifact page is allowed; the
+default --kbps 1300 gives about 8.5 MB for 50 seconds at 720p, with the demo
+GUI on a filmed screen still legible. --kbps 0 falls back to avconvert's own
+preset bitrate, which is several times larger.
 """
 import argparse
 import glob
@@ -65,6 +68,8 @@ def main():
                     help="output size, default %(default)s")
     ap.add_argument("--start", type=float, default=None, help="skip this many seconds")
     ap.add_argument("--duration", type=float, default=None, help="keep this many seconds")
+    ap.add_argument("--kbps", type=int, default=1300,
+                    help="video bitrate, default %(default)s; 0 = avconvert's preset")
     ap.add_argument("--out", default=os.path.join(ASSETS, "hand_demo.mp4"))
     ap.add_argument("--no-poster", action="store_true",
                     help="keep the existing poster frame, or go without one")
@@ -74,23 +79,32 @@ def main():
         sys.exit("no such file: " + args.source)
     os.makedirs(ASSETS, exist_ok=True)
 
-    # avconvert picks the container from the extension, and .m4v is MPEG-4
-    tmp_out = os.path.splitext(args.out)[0] + ".m4v"
-    cmd = ["avconvert", "--source", args.source, "--output", tmp_out,
-           "--preset", args.preset, "--replace", "--multiPass"]
-    if args.start is not None:
-        cmd += ["--start", str(args.start)]
-    if args.duration is not None:
-        cmd += ["--duration", str(args.duration)]
-    print("transcoding with", args.preset, "...")
-    run(cmd)
-    os.replace(tmp_out, args.out)          # same container, the name says mp4
+    if args.kbps:
+        w, h = args.preset[len("Preset"):].split("x")
+        cmd = ["swift", os.path.join(HERE, "transcode.swift"), args.source, args.out,
+               w, h, str(args.kbps), str(args.start or 0)]
+        if args.duration is not None:
+            cmd.append(str(args.duration))
+        print("transcoding to %sx%s at %d kbit/s ..." % (w, h, args.kbps))
+        run(cmd)
+    else:
+        # avconvert picks the container from the extension, and .m4v is MPEG-4
+        tmp_out = os.path.splitext(args.out)[0] + ".m4v"
+        cmd = ["avconvert", "--source", args.source, "--output", tmp_out,
+               "--preset", args.preset, "--replace", "--multiPass"]
+        if args.start is not None:
+            cmd += ["--start", str(args.start)]
+        if args.duration is not None:
+            cmd += ["--duration", str(args.duration)]
+        print("transcoding with", args.preset, "...")
+        run(cmd)
+        os.replace(tmp_out, args.out)      # same container, the name says mp4
 
     mb = os.path.getsize(args.out) / 1e6
     print("wrote %s, %.1f MB" % (args.out, mb))
     if mb > 9:
         print("  the self-contained build wants under 9 MB: trim it with --duration,\n"
-              "  or drop to --preset Preset960x540")
+              "  or lower --kbps")
 
     poster = os.path.splitext(args.out)[0] + ".jpg"
     if not args.no_poster:

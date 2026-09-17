@@ -222,6 +222,9 @@
   "media.error.h": "The camera did not open",
   "media.error.p": "Try again or pick another device. If another application is holding the camera, close it first.",
   "media.retry": "Try again",
-  "btn.sound.title": "Servo sound"
+  "btn.sound.title": "Servo sound",
+  "stage.model": "3D model",
+  "stage.video": "Real hand",
+  "stage.tag.video": "InMoov i2 · recording · same trials, same timing"
  }
 }
