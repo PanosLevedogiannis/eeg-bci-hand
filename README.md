@@ -348,5 +348,13 @@ The participant recordings are **not** included in this repository. They are per
 
 ---
 
+## License
+
+The code is released under the [MIT License](LICENSE). The participant EEG recordings are not part of the
+repository and are not covered by it (see *Data availability*). `site/assets/three.min.js` is Three.js, under its
+own MIT license.
+
+---
+
 *Thesis: "Robotic Arm Control through a Brain–Computer Interface Using EEG Motor Imagery"*  
 *Supervisor: Assoc. Prof. Athanasios Koutras*
