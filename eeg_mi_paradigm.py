@@ -8,20 +8,21 @@
   Hardware: OpenBCI Cyton (8-channel)
 
   Classification task: Motor Imagery vs Rest
-    - Class 1 (MI):   Imagine closing the right hand
-    - Class 0 (REST): Relax, no movement imagery
+    - MI   (marker 1): Imagine closing the right hand
+    - REST (marker 2): Relax, no movement imagery
+    Markers 1/2 are pushed at the start of the imagery phase (cue already gone).
 
   Protocol changes (v2 — per supervisor feedback):
     1. Task changed to MI vs Rest (from open/close same hand)
     2. Imagery phase shows fixation cross only — no visual hand icons
     3. LSL markers for sample-accurate alignment with OpenBCI recording
     4. Randomized inter-trial interval (1.5–2.5s)
-    5. Session split into 4 runs × 20 trials with mandatory breaks
+    5. Session split into 4 runs × 80 trials (40 MI + 40 REST) with mandatory breaks
     6. Beep (1kHz, 70ms) before each cue
-    7. Baseline recording at session start (2min eyes open + 1min eyes closed)
+    7. Baseline recording at session start (eyes open + eyes closed, see SessionConfig)
 
   Requirements:
-      pip install pygame numpy pylsl
+      pip install pygame numpy pylsl brainflow mne
 
   Usage:
       python eeg_mi_paradigm.py
@@ -67,8 +68,8 @@ import csv
 @dataclass
 class SessionConfig:
     subject_id:       str   = "S01"
-    trials_per_class: int   = 20          # 20 MI + 20 REST per run
-    n_runs:           int   = 1           # 1 run × 40 trials = 40 total
+    trials_per_class: int   = 40          # 40 MI + 40 REST per run (thesis protocol)
+    n_runs:           int   = 4           # 4 runs × 80 trials = 320 total
     classes:          List[str] = field(default_factory=lambda: ["MI", "REST"])
 
     # Timing (seconds) — Graz-BCI protocol
@@ -99,7 +100,7 @@ class SessionConfig:
 
     # BrainFlow / Cyton
     cyton_port:  str = "/dev/cu.usbserial-DQ007OFI"
-    simulate:    bool = True    # True = synthetic board (no hardware needed)
+    simulate:    bool = False   # True = synthetic board (no hardware needed) — never for real sessions
 
 
 CFG = SessionConfig()
@@ -556,10 +557,11 @@ class IntroScreen(Screen):
             pygame.draw.line(s, C["border"], (W//2 - 300, 110), (W//2 + 300, 110), 1)
 
             phases = [
-                ("BASELINE",      "3 min",                   "Eyes open (2min) + eyes closed (1min)",    C["accent_blue"]),
+                ("BASELINE",      f"{(CFG.t_baseline_eyes_open + CFG.t_baseline_eyes_closed) / 60:.0f} min",
+                                  f"Eyes open ({CFG.t_baseline_eyes_open:.0f}s) + eyes closed ({CFG.t_baseline_eyes_closed:.0f}s)", C["accent_blue"]),
                 ("REST",          f"{CFG.t_rest_min:.1f}–{CFG.t_rest_max:.1f}s", "Black screen — relax completely (jittered)", C["grey"]),
                 ("PREPARE",       f"{CFG.t_prepare:.0f}s",   "Fixation cross — focus attention",          C["accent_blue"]),
-                ("CUE",           f"{CFG.t_cue:.2f}s",       "MI or REST label + beep — then disappears", C["warning"]),
+                ("CUE",           f"{CFG.t_cue:.2f}s",       "MI or REST label — then disappears", C["warning"]),
                 ("MOTOR IMAGERY", f"{CFG.t_imagery:.0f}s",   "Fixation cross only — imagine or rest",     C["accent_cyan"]),
                 ("FEEDBACK",      f"{CFG.t_feedback:.1f}s",  "Blink freely — prepare for next trial",     C["accent_mi"]),
             ]
@@ -935,7 +937,6 @@ class SessionScreen(Screen):
         self.markers: List[TrialMarker] = []
         self.current_marker: Optional[TrialMarker] = None
         self.phase_bar          = ProgressBar(40, self.H - 30, self.W - 80, 8, C["accent_cyan"])
-        self.beep_played        = False
 
     def session_elapsed(self):
         return time.time() - self.session_start
@@ -969,7 +970,6 @@ class SessionScreen(Screen):
                 return
             self.phase = self.PHASE_REST
             self.current_rest_dur = random.uniform(CFG.t_rest_min, CFG.t_rest_max)
-            self.beep_played = False
         else:
             idx = order.index(self.phase)
             self.phase = order[idx + 1]
@@ -1014,8 +1014,6 @@ class SessionScreen(Screen):
         self.phase_elapsed += dt
         dur = self.phase_duration()
         self.phase_bar.value = min(1.0, self.phase_elapsed / dur)
-
-        pass  # beep only at end of baseline eyes closed
 
         if self.phase_elapsed >= dur:
             self.next_phase()
