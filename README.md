@@ -30,7 +30,7 @@ OpenBCI Cyton (8-ch, 250 Hz)
         │
         ▼  BrainFlow streaming
 ┌────────────────────────────────────┐
-│  IIR Bandpass 8–30 Hz + CAR        │  preprocessing
+│  8–30 Hz + notch 50 Hz + CAR       │  preprocessing
 │  Sliding window: 1000ms / 125ms    │
 └────────────────────────────────────┘
         │
@@ -66,19 +66,18 @@ OpenBCI Cyton (8-ch, 250 Hz)
 
 | Step | Script | Description |
 |------|--------|-------------|
-| 1 | `load_data.py` | Load PhysioNet benchmark or OpenBCI recordings |
-| 2 | `erd_analysis.py` | Bandpass 1–40 Hz + notch 50 Hz + CAR + epoching + amplitude rejection (300 µV) |
-| 3 | `visualize.py` | ERD/ERS maps, spectrograms, topomaps |
-| 4 | `classify.py` | CSP + LDA / SVM / Riemannian MDM (10-fold CV) |
-| 5 | `realtime_gui.py` | Live EEG → classify → Arduino + graphical monitor |
+| 1 | `eeg_mi_paradigm.py` | Graz-BCI recording paradigm (Pygame), 4 runs × 80 trials, LSL markers |
+| 2 | `erd_analysis.py` | Raw-signal QC, then bandpass 1–40 Hz + notch 50 Hz + CAR + epoching + amplitude rejection (200 µV); ERD/ERS figures |
+| 3 | `classify_all_subjects.py` | CSP + LDA / SVM / Riemannian MDM per participant, 10-fold CV (`classify.py`) |
+| 4 | `reliability_analysis.py` | Leave-One-Run-Out CV, 1,000-permutation tests, run-by-run trend |
+| 5 | `group_level_stats.py` | Wilcoxon signed-rank against chance, 10-fold and LORO |
+| 6 | `replay_gui.py` / `replay_demo.py` | Train on runs 1–3, replay run 4 through the classifier to the hand |
+| 7 | `realtime_gui.py` | Live Cyton EEG → classifier → Arduino (not part of the reported evaluation) |
 
-**Supporting scripts:**
+Every analysis script reads the same dataset folder: pass `--dataset /path/to/inMoov_Dataset`
+or set `INMOOV_DATASET` once.
 
-| Script | Description |
-|--------|-------------|
-| `run_all.py` | Runs steps 1–4 for one subject |
-| `multi_subject_analysis.py` | Batch benchmark on PhysioNet subjects 1–N |
-| `eeg_mi_paradigm.py` | Graz-BCI data collection paradigm (Pygame GUI) |
+Earlier scripts (PhysioNet pipeline, first-cohort analyses) are kept in [`legacy/`](legacy/).
 
 ---
 
@@ -111,26 +110,19 @@ pip install -r requirements_pipeline.txt
 
 ---
 
-## Quickstart — No Hardware Needed
-
-The pipeline auto-downloads the PhysioNet EEG Motor Imagery dataset (~60 MB per subject).
+## Reproducing the results
 
 ```bash
 source eeg_bci_env/bin/activate
+export INMOOV_DATASET=/path/to/inMoov_Dataset      # folder of S01/ … S14/
 
-# Run full pipeline for subject 1 (download → preprocess → visualize → classify)
-python run_all.py
-
-# Different subject
-python run_all.py --subject 5
-
-# Benchmark across 10 subjects
-python multi_subject_analysis.py
+python classify_all_subjects.py                    # 10-fold, all four classifiers
+python reliability_analysis.py --perms 1000        # leave-one-run-out + permutation tests
+python group_level_stats.py                        # group-level Wilcoxon (both schemes)
+python render_thesis_figures.py                    # print-ready figures
 ```
 
-**Output:**
-- `eeg_data/figures/` — ERD/ERS, spectrogram, topomap, multi-subject comparison
-- `eeg_data/models/` — trained classifier (`.joblib`) + report (`.json`)
+Results are written to `eeg_data/exports/`, figures to `eeg_data/figures/`.
 
 ---
 
@@ -140,16 +132,21 @@ python multi_subject_analysis.py
 python eeg_mi_paradigm.py
 ```
 
-The Graz-BCI paradigm guides the subject through 40 trials per class:
+Set `cyton_port` in `SessionConfig` first. `simulate=True` there records from BrainFlow's
+synthetic board and must never be used for a real session.
 
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| Fixation cross | 2 s | Prepare, stay still |
-| Cue arrow | 1 s | LEFT = imagine opening, RIGHT = imagine closing |
-| Imagery window | 4 s | Maintain imagined movement |
-| Rest | 2–3 s (jittered) | Relax |
+Each session starts with an eyes-open and an eyes-closed baseline (a beep marks its end), then 4 runs of
+80 trials (40 MI + 40 REST in random order) with a mandatory break between runs:
 
-Trial markers saved to `eeg_data/session_log_<timestamp>.json` for offline alignment.
+| Phase | Duration | Screen |
+|-------|----------|--------|
+| Rest | 1.5–2.5 s (jittered) | Blank |
+| Prepare | 2.0 s | Fixation cross |
+| Cue | 2.25 s | "MI" or "REST" |
+| Imagery | 4.0 s | Fixation cross only — marker 1 (MI) or 2 (REST) at its start |
+| Feedback | 1.5 s | "You may blink" |
+
+Markers go to an LSL stream and are saved with the EEG as FIF annotations.
 
 **Electrode Placement (10-20 system):**
 
@@ -185,9 +182,12 @@ ls /dev/ttyUSB*     # Linux
 ARDUINO_PORT = "/dev/cu.usbmodem1101"
 CYTON_PORT   = "/dev/cu.usbserial-XXXX"
 
-# 3. Run
-python realtime_gui.py
+# 3. Run with the model classify_all_subjects.py saved for that participant
+python realtime_gui.py --subject S11
 ```
+
+The class names are read from the report saved next to the model, so MI always closes
+the hand and REST always opens it.
 
 **The GUI shows:**
 - Live scrolling EEG waveform (C3 = blue, C4 = orange)
@@ -200,12 +200,13 @@ python realtime_gui.py
 | Parameter | Value |
 |-----------|-------|
 | Sampling rate | 250 Hz |
-| Bandpass filter | 8–30 Hz (IIR Butterworth, order 4) |
-| Window | 1000 ms |
+| Filter | 8–30 Hz Butterworth (order 4) + 50 Hz notch, causal, over a 4 s buffer |
+| Units | BrainFlow µV converted to V, as in training |
+| Window | 1000 ms (last second of the filtered buffer) |
 | Step | 125 ms |
 | Vote buffer | 7 predictions |
 | Confidence threshold | 60% |
-| Command hold | 2 s |
+| Command hold | 2 s minimum between hand changes |
 
 ### Arduino serial protocol (PCA9685)
 
@@ -285,7 +286,6 @@ eeg-bci-hand/
 ├── classify.py                 # CSP + LDA / SVM / Riemannian MDM
 ├── classify_all_subjects.py    # Batch classification over the cohort
 ├── reliability_analysis.py     # Leave-One-Run-Out CV + permutation tests
-├── statistics_analysis.py      # Per-participant significance testing
 ├── group_level_stats.py        # Group-level Wilcoxon
 │
 ├── replay_gui.py               # DEMO — recorded EEG → classifier → hand (GUI)
@@ -294,19 +294,17 @@ eeg-bci-hand/
 │
 ├── render_thesis_figures.py    # Print-ready figures from saved results
 ├── prepare_appendix_figures.py # Downsample per-participant figures
-├── generate_report.py          # PDF/report generation
+├── generate_report.py          # PDF report for the supervisor
 │
-├── preprocess.py               # Legacy single-subject preprocessing
-├── load_data.py                # Loaders (PhysioNet + OpenBCI)
-├── visualize.py                # Exploratory plots
-├── run_all.py                  # Legacy single-subject driver
-│
+├── legacy/                     # Earlier scripts, not used for the results
+├── site/                       # Source of the thesis site (published from docs/)
+├── docs/                       # Published site (GitHub Pages)
 ├── arduino/
 │   └── InMoov_EEG_Control/
 │       └── InMoov_EEG_Control.ino   # PCA9685 sketch, 9600 baud
 └── eeg_data/
-    ├── figures/                # Generated plots
-    └── models/                 # Trained classifiers + JSON reports
+    ├── figures/thesis/         # The two group-level figures used above
+    └── models/                 # Per-participant 10-fold reports (JSON)
 ```
 
 ### Data availability
@@ -344,6 +342,7 @@ The participant recordings are **not** included in this repository. They are per
 - [x] Leave-One-Run-Out validation with 1,000-permutation significance tests
 - [x] Arduino sketch — PCA9685 I2C, 5 servos
 - [x] **Replay demo — unseen recorded trials driving the physical hand (72.5%)**
+- [x] Real-time GUI checked offline against the training pipeline (same features, same class mapping)
 - [ ] Closed-loop live session with real-time visual feedback to the user
 - [ ] Cross-session validation (models trained one day, tested another)
 

@@ -10,17 +10,18 @@ scipy>=1.11.0
 scikit-learn>=1.3.0
 joblib>=1.3.0
 
-# Riemannian geometry classifier (MDM — often +2-5% over CSP with small N)
+# Riemannian geometry classifier (MDM)
 pyriemann>=0.5
 
 # Visualization
 matplotlib>=3.7.0
 
-# Data handling
-pandas>=2.0.0
+# Recording paradigm (eeg_mi_paradigm.py)
+pygame>=2.5
+pylsl>=1.16
 
-# Real-time OpenBCI streaming (Phase 3 — realtime.py)
+# OpenBCI streaming (eeg_mi_paradigm.py, realtime_gui.py)
 brainflow>=5.10.0
 
-# Arduino serial communication (Phase 3 — realtime.py)
+# Arduino serial communication (realtime_gui.py, replay_gui.py, replay_demo.py)
 pyserial>=3.5

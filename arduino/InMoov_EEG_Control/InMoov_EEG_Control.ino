@@ -3,7 +3,7 @@
  *  InMoov i2 Robotic Hand — EEG BCI Serial Control
  *  Hardware: Adafruit PCA9685 PWM Servo Driver (I2C)
  * ============================================================
- *  Receives string commands from Python (realtime.py):
+ *  Receives string commands from Python (realtime_gui.py, replay_gui.py, replay_demo.py):
  *    "mid\n"  →  Open hand   (all fingers to SERVOMID)
  *    "min\n"  →  Close hand  (all fingers to SERVOMIN)
  *
