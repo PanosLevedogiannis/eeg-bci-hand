@@ -1,5 +1,5 @@
 """
-Build a single PDF report for sharing the inMoov S01-S11 ERD/ERS +
+Build a single PDF report for sharing the inMoov ERD/ERS +
 classification + raw-signal QC analysis with the supervisor (Koutras).
 Pulls real numbers from eeg_data/exports/classification_summary.json
 (produced by classify_all_subjects.py) rather than hardcoding them.
@@ -52,7 +52,7 @@ with PdfPages(OUT_PATH) as pdf:
     # ---- Summary page ----
     fig = plt.figure(figsize=(8.5, 11))
     fig.text(0.5, 0.96, "EEG Motor Imagery — Full Analysis Report", ha="center", fontsize=17, weight="bold")
-    fig.text(0.5, 0.935, "InMoov i2 Robotic Hand BCI — Subjects S01–S11", ha="center", fontsize=11, color="0.3")
+    fig.text(0.5, 0.935, "InMoov i2 Robotic Hand BCI — All subjects", ha="center", fontsize=11, color="0.3")
 
     body = (
         "Task: Motor Imagery (right hand) vs Rest, Graz-BCI protocol\n"
@@ -140,12 +140,13 @@ with PdfPages(OUT_PATH) as pdf:
             fig.text(x, y0, h, fontsize=9, weight="bold")
 
         labels = {
-            "lda_all11": "LDA — all 11 subjects",
-            "lda_kept10": "LDA — excl. S08 (at-chance)",
-            "lda_kept9_strict": "LDA — excl. S08 + S07 (strict)",
-            "best_all11": "Best-of-4 — all 11 (supplementary)",
+            "lda_all": "LDA — all subjects",
+            "lda_excl_S08": "LDA — excl. S08 (at-chance)",
+            "lda_excl_S08_S07": "LDA — excl. S08 + S07 (strict)",
+            "best_all": "Best-of-4 — all (supplementary)",
+            "loro_lda_all": "LORO CSP+LDA — all subjects",
         }
-        for i, key in enumerate(["lda_all11", "lda_kept10", "lda_kept9_strict", "best_all11"]):
+        for i, key in enumerate(["lda_all", "lda_excl_S08", "lda_excl_S08_S07", "best_all", "loro_lda_all"]):
             r = GROUP_STATS.get(key)
             if not r:
                 continue

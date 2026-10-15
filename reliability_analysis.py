@@ -49,10 +49,9 @@ from sklearn.metrics import accuracy_score, cohen_kappa_score, precision_recall_
 
 mne.set_log_level("ERROR")
 
-from erd_analysis import find_fif, load_and_preprocess
+from erd_analysis import find_fif, load_and_preprocess, DATASET_DIR
 from classify import prepare_data, N_CSP_COMPONENTS
 
-DATASET_DIR  = "/Users/panoslevedogiannis/Downloads/inMoov_Dataset 4/inMoov_Dataset"
 FIG_DIR      = "eeg_data/figures"
 EXPORT_PATH  = "eeg_data/exports/reliability_summary.json"
 N_PERMS      = 1000

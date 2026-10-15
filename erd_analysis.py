@@ -36,7 +36,8 @@ mne.set_log_level("WARNING")
 #  CONFIG
 # ─────────────────────────────────────────────
 
-DATASET_DIR = "/Users/panoslevedogiannis/Downloads/inMoov_Dataset"
+# One folder of SXX/ subdirectories for every script; set INMOOV_DATASET or pass --dataset.
+DATASET_DIR = os.environ.get("INMOOV_DATASET", "inMoov_Dataset")
 FIG_DIR     = "eeg_data/figures"
 os.makedirs(FIG_DIR, exist_ok=True)
 

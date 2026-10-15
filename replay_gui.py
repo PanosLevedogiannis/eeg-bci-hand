@@ -39,11 +39,10 @@ from sklearn.pipeline import Pipeline
 from mne.decoding import CSP
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from erd_analysis import find_fif, load_and_preprocess
+from erd_analysis import find_fif, load_and_preprocess, DATASET_DIR
 from classify import prepare_data, N_CSP_COMPONENTS
 from reliability_analysis import get_run_ids
 
-DATASET_DIR  = "/Users/panoslevedogiannis/Downloads/inMoov_Dataset__LAST"
 ARDUINO_PORT = "/dev/cu.usbmodem1101"
 ARDUINO_BAUD = 9600
 

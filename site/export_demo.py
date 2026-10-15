@@ -9,11 +9,10 @@ import mne
 
 PROJ = "/Users/panoslevedogiannis/Documents/eeg python protocol"
 sys.path.insert(0, PROJ)
-from erd_analysis import find_fif, load_and_preprocess
+from erd_analysis import find_fif, load_and_preprocess, DATASET_DIR as DATASET
 from classify import prepare_data, N_CSP_COMPONENTS
 from reliability_analysis import get_run_ids
 
-DATASET = "/Users/panoslevedogiannis/Downloads/inMoov_Dataset__LAST"
 OUT = sys.argv[1]
 SUBJECTS = sys.argv[2].split(",")
 TEST_RUN = 4

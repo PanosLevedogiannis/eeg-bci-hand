@@ -15,10 +15,9 @@ import os
 import json
 from datetime import datetime
 
-from erd_analysis import find_fif, load_and_preprocess
+from erd_analysis import find_fif, load_and_preprocess, DATASET_DIR
 from classify import run_classification
 
-DATASET_DIR = "/Users/panoslevedogiannis/Downloads/inMoov_Dataset"
 RESULTS_PATH = "eeg_data/exports/classification_summary.json"
 
 
