@@ -9,11 +9,11 @@
     4. SVM classifier  (better accuracy)
     5. Cross-validation & results report
 
-  Input:  epochs_<subject>_<source>-epo.fif  (from preprocess.py)
-  Output: trained model saved to  eeg_data/models/
+  Input:  mne.Epochs from erd_analysis.load_and_preprocess()
+  Output: trained model + JSON report saved to  eeg_data/models/
 
-  Usage:
-    python classify.py
+  Usage (called per subject by):
+    python classify_all_subjects.py --dataset /path/to/inMoov_Dataset
 =============================================================================
 """
 
@@ -43,12 +43,7 @@ from mne.decoding import CSP
 
 mne.set_log_level("ERROR")
 
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-from preprocess import load_epochs, DATA_DIR
-
-MODEL_DIR = os.path.join(DATA_DIR, "models")
+MODEL_DIR = os.path.join("eeg_data", "models")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 # ─────────────────────────────────────────────
@@ -277,12 +272,9 @@ def print_confusion_matrix(y, y_pred, label_map):
 #  FULL PIPELINE
 # ─────────────────────────────────────────────
 
-def run_classification(epochs: mne.Epochs = None,
-                       subject_id: str = "P001",
-                       source: str = "physionet"):
-
-    if epochs is None:
-        epochs = load_epochs(subject_id, source)
+def run_classification(epochs: mne.Epochs,
+                       subject_id: str,
+                       source: str = "inmoov"):
 
     print(f"\n{'='*55}")
     print(f"  Classification  |  {subject_id}  |  {source}")
@@ -308,7 +300,7 @@ def run_classification(epochs: mne.Epochs = None,
     print(f"  → Accuracy   : {cv_results[best]['mean']*100:.1f}% ± "
           f"{cv_results[best]['std']*100:.1f}%")
     print(f"  → Saved to   : {path}")
-    print(f"\n  Next: run realtime.py for live EEG → Arduino control\n")
+    print(f"\n  Next: realtime_gui.py --subject {subject_id} for live EEG → Arduino control\n")
 
     return model, cv_results
 
@@ -318,4 +310,4 @@ def run_classification(epochs: mne.Epochs = None,
 # ─────────────────────────────────────────────
 
 if __name__ == "__main__":
-    run_classification(subject_id="P001", source="physionet")
+    print("classify.py is a library. Run: python classify_all_subjects.py --dataset <folder>")
