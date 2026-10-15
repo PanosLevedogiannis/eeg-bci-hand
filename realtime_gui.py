@@ -4,6 +4,10 @@
 =============================================================================
   Live EEG signal + classification result + hand state in one window.
 
+  The model is the one classify.py saved for the subject. Its class names come
+  from the report saved next to it, so MI always closes the hand and REST
+  always opens it, whatever integer the classes were encoded as.
+
   Usage:
     python realtime_gui.py --simulate   # synthetic EEG, real Arduino
     python realtime_gui.py              # real Cyton + Arduino
@@ -17,6 +21,7 @@ import time
 import sys
 import os
 import glob
+import json
 
 import numpy as np
 
@@ -29,10 +34,7 @@ from matplotlib.gridspec import GridSpec
 
 import joblib
 import serial
-from scipy.signal import butter, sosfiltfilt
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from preprocess import DATA_DIR
+from scipy.signal import butter, iirnotch, sosfilt, sosfiltfilt, tf2sos
 
 try:
     from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
@@ -44,17 +46,19 @@ except ImportError:
 #  CONFIG
 # ─────────────────────────────────────────────
 
-MODEL_DIR    = os.path.join(DATA_DIR, "models")
+MODEL_DIR    = os.path.join("eeg_data", "models")
 ARDUINO_PORT = "/dev/cu.usbmodem1101"
 CYTON_PORT   = "/dev/cu.usbserial-DQ007OFI"
-SUBJECT_ID   = "P001"
+SUBJECT_ID   = "S11"
 
 SFREQ        = 250
 CLF_LFREQ    = 8.0
 CLF_HFREQ    = 30.0
 FILTER_ORDER = 4
+NOTCH_FREQ   = 50.0     # mains; on the raw Cyton signal it is 10^4–10^6 × the EEG at 20 Hz
 
 WINDOW_MS    = 1000
+BUFFER_MS    = 4000     # filtered as a whole; only the last WINDOW_MS is classified
 STEP_MS      = 125
 VOTE_SIZE    = 7
 MIN_VOTE_PCT = 0.60
@@ -63,6 +67,7 @@ SIM_INTERVAL = 3.0      # seconds per state in simulate mode
 
 DISPLAY_SECS    = 4     # EEG window to show on screen
 WINDOW_SAMPLES  = int(SFREQ * WINDOW_MS / 1000)
+BUFFER_SAMPLES  = int(SFREQ * BUFFER_MS / 1000)
 STEP_SAMPLES    = int(SFREQ * STEP_MS  / 1000)
 DISPLAY_SAMPLES = SFREQ * DISPLAY_SECS
 
@@ -118,14 +123,30 @@ class State:
 # ─────────────────────────────────────────────
 
 def build_iir():
+    """8–30 Hz band-pass followed by a 50 Hz notch, as one SOS cascade.
+    The band-pass alone leaves enough mains in the window to swamp the
+    CSP features; the offline chain removes it with its own notch."""
     nyq = SFREQ / 2.0
-    return butter(FILTER_ORDER, [CLF_LFREQ / nyq, CLF_HFREQ / nyq],
-                  btype="band", output="sos")
+    band  = butter(FILTER_ORDER, [CLF_LFREQ / nyq, CLF_HFREQ / nyq],
+                   btype="band", output="sos")
+    notch = tf2sos(*iirnotch(NOTCH_FREQ, 30.0, fs=SFREQ))
+    return np.vstack([band, notch])
 
-def preprocess_window(eeg, sos):
-    filtered = np.array([sosfiltfilt(sos, ch) for ch in eeg])
-    filtered -= filtered.mean(axis=0, keepdims=True)
-    return filtered[np.newaxis, :, :]
+def preprocess_window(eeg_uv, sos):
+    """
+    eeg_uv: (8, BUFFER_SAMPLES) raw Cyton data in µV.
+    Returns the last WINDOW_SAMPLES as (1, 8, WINDOW_SAMPLES), band-passed and
+    re-referenced like the training epochs.
+
+    The whole buffer is filtered, not the window alone: the Cyton's DC offset
+    (tens of mV) would otherwise fill a 1 s window with filter transients and
+    the classifier would return the same class every time.
+    """
+    x = eeg_uv * 1e-6                          # BrainFlow gives µV; the model was trained in V (MNE)
+    x = x - x.mean(axis=1, keepdims=True)      # remove the DC offset before filtering
+    x = sosfilt(sos, x, axis=1)                # causal: uses past samples only
+    x -= x.mean(axis=0, keepdims=True)         # CAR
+    return x[np.newaxis, :, -WINDOW_SAMPLES:]
 
 # ─────────────────────────────────────────────
 #  ARDUINO
@@ -159,26 +180,29 @@ def load_model(subject_id):
     if not files:
         raise FileNotFoundError(f"No model for '{subject_id}' in {MODEL_DIR}")
     model = joblib.load(files[-1])
-    print(f"  ✓ Model loaded  ← {os.path.basename(files[-1])}")
-    return model
+    report_path = files[-1].replace("model_", "report_").replace(".joblib", ".json")
+    with open(report_path) as f:
+        label_map = {int(k): v for k, v in json.load(f)["label_map"].items()}
+    print(f"  ✓ Model loaded  ← {os.path.basename(files[-1])}  {label_map}")
+    return model, label_map
 
 # ─────────────────────────────────────────────
 #  WORKER THREAD
 # ─────────────────────────────────────────────
 
-def worker(state, model, arduino, sos, board, eeg_channels, simulate):
+def worker(state, model, label_map, arduino, sos, board, eeg_channels, simulate):
     vote_buffer = collections.deque(maxlen=VOTE_SIZE)
     last_cmd    = None
     last_cmd_t  = 0.0
     start_t     = time.time()
 
-    time.sleep(WINDOW_SAMPLES / SFREQ + 0.3)   # initial buffer fill
+    time.sleep(BUFFER_SAMPLES / SFREQ + 0.3)   # initial buffer fill
 
     while state.running:
         t0  = time.time()
-        raw = board.get_current_board_data(WINDOW_SAMPLES)
+        raw = board.get_current_board_data(BUFFER_SAMPLES)
 
-        if raw.shape[1] < WINDOW_SAMPLES:
+        if raw.shape[1] < BUFFER_SAMPLES:
             time.sleep(0.01)
             continue
 
@@ -198,7 +222,8 @@ def worker(state, model, arduino, sos, board, eeg_channels, simulate):
         else:
             eeg_data = raw[eeg_channels, :]
             X    = preprocess_window(eeg_data, sos)
-            pred = int(model.predict(X)[0])
+            cls  = int(model.predict(X)[0])
+            pred = 1 if label_map[cls] == "MI" else 0   # 1 = CLOSE, 0 = OPEN
             with state._lock:
                 state.cue = ""
 
@@ -222,7 +247,7 @@ def worker(state, model, arduino, sos, board, eeg_channels, simulate):
                 state.confidence = confidence
 
             if confidence >= MIN_VOTE_PCT:
-                if winner != last_cmd or (now - last_cmd_t) > HOLD_S:
+                if winner != last_cmd and (now - last_cmd_t) >= HOLD_S:
                     cmd = "O" if winner == 0 else "C"
                     send_command(arduino, cmd)
                     last_cmd   = winner
@@ -472,7 +497,7 @@ def main():
     print(f"  EEG BCI GUI  |  Subject: {args.subject}")
     print(f"{'='*55}")
 
-    model   = load_model(args.subject)
+    model, label_map = load_model(args.subject)
     arduino = connect_arduino(ARDUINO_PORT)
     sos     = build_iir()
     board, eeg_channels = setup_board(args.simulate)
@@ -482,7 +507,7 @@ def main():
     # Start worker thread
     t = threading.Thread(
         target=worker,
-        args=(state, model, arduino, sos, board, eeg_channels, args.simulate),
+        args=(state, model, label_map, arduino, sos, board, eeg_channels, args.simulate),
         daemon=True,
     )
     t.start()
