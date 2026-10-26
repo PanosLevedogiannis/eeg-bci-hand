@@ -110,7 +110,7 @@ code{font-family:var(--f-mono); font-size:.86em; background:var(--surface-2);
 @media(max-width:900px){.hero-grid{grid-template-columns:1fr; gap:36px; align-items:start}}
 h1{font-size:clamp(30px,4.6vw,50px); line-height:1.1; letter-spacing:-.025em; font-weight:600}
 .h1-en{font-family:var(--f-ui); font-size:15px; font-weight:400; color:var(--ink-3); line-height:1.45; max-width:44ch}
-.byline{display:flex; flex-wrap:wrap; gap:0 28px; font-family:var(--f-ui); font-size:13.5px; color:var(--ink-2)}
+.byline{display:flex; flex-wrap:wrap; gap:12px 28px; font-family:var(--f-ui); font-size:13.5px; color:var(--ink-2)}
 .byline b{display:block; font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
 .hero-fig{margin:0}
 .hero-fig img{width:100%; height:auto; border-radius:3px; box-shadow:var(--shadow)}
@@ -278,6 +278,10 @@ svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
 
 /* ---------- misc blocks ---------- */
 .callout{border-inline-start:2px solid var(--accent); padding:2px 0 2px 18px; margin-block:4px}
+.key-finding{margin-top:30px; max-width:78ch; font-family:var(--f-ui); font-size:15px; line-height:1.55; color:var(--ink)}
+.key-finding p{margin:6px 0 0}
+.hero-cta{display:flex; flex-wrap:wrap; gap:10px}
+.hero-cta .btn{text-decoration:none; display:inline-block}
 .callout .h{font-family:var(--f-ui); font-size:11px; font-weight:600; letter-spacing:.11em;
   text-transform:uppercase; color:var(--accent); margin-bottom:5px}
 .deflist{display:grid; grid-template-columns:auto 1fr; gap:9px 20px; font-family:var(--f-ui); font-size:14px}
@@ -326,8 +330,15 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
         <div><b>Συγγραφέας</b>Παναγιώτης Λεβεντογιάννης</div>
         <div><b>Επιβλέπων</b>Αθανάσιος Κούτρας, Αναπληρωτής Καθηγητής</div>
         <div><b>Έτος</b>Πάτρα 2026</div>
+        <div><b>Σήμερα</b>Ερευνητής ασκούμενος, g.tec medical engineering (Αυστρία)</div>
+        <div><b>Επόμενο βήμα</b>Υποψήφιος για PhD, φθινόπωρο 2027</div>
       </div>
-      <div><a class="btn primary ui" href="#demo" style="text-decoration:none; display:inline-block">Δες το demo &#8595;</a></div>
+      <div class="hero-cta">
+        <a class="btn primary ui" href="#demo">Δες το demo &#8595;</a>
+        <a class="btn ui" href="https://panoslevedogiannis.github.io/CV_Levedogiannis.pdf" target="_blank" rel="noopener">CV (PDF)</a>
+        <a class="btn ui" href="mailto:plevedogiannis@gmail.com">Email</a>
+        <a class="btn ui" href="https://panoslevedogiannis.github.io/" target="_blank" rel="noopener">panoslevedogiannis.github.io</a>
+      </div>
     </div>
     <figure class="hero-fig">
       <img src="__IMG_COMPLETE__" alt="Το ολοκληρωμένο ρομποτικό χέρι InMoov i2 με τον πήχη, τυπωμένο σε μαύρο PLA, με κόκκινους τένοντες και καλωδιώσεις σερβοκινητήρων." width="900" height="1200">
@@ -340,6 +351,12 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
     <div class="kpi"><div class="v">4.480</div><div class="k">δοκιμές νοερής κίνησης και ηρεμίας</div></div>
     <div class="kpi"><div class="v">8<span class="u"> κανάλια</span></div><div class="k">OpenBCI Cyton στα 250 Hz</div></div>
     <div class="kpi"><div class="v">72,5<span class="u">%</span></div><div class="k">σωστές εντολές σε run εκτός εκπαίδευσης</div></div>
+  </div>
+
+  <div class="callout key-finding">
+    <div class="h">Το βασικό εύρημα</div>
+    <p>Με το συνηθισμένο 10-fold cross-validation σχεδόν όλοι οι συμμετέχοντες έμοιαζαν επιτυχημένοι. Όταν όμως ο ταξινομητής εκπαιδεύεται σε τρία runs και ελέγχεται σε ένα τέταρτο που δεν έχει δει ποτέ (leave-one-run-out, με permutation test), μόνο <b>6 από τους 14</b> γενικεύουν πραγματικά. Αυτή η απόσταση ανάμεσα στο εργαστήριο και την πραγματική χρήση είναι το ερώτημα που θέλω να συνεχίσω να ψάχνω.</p>
+    <p class="note"><a href="#apotelesmata">Δες τα αποτελέσματα ανά συμμετέχοντα &#8595;</a></p>
   </div>
 </header>
 
@@ -848,8 +865,11 @@ const I18N = (function(){
     "media.retry":      "Δοκίμασε ξανά"
   };
 
-  let cur = "el";
+  /* English unless the browser is Greek; a saved choice wins; ?lang=en|el in the URL wins over both */
+  let cur = "en";
+  try { if ((navigator.language || "").toLowerCase().indexOf("el") === 0) cur = "el"; } catch(e){}
   try { const v = localStorage.getItem(STORE); if (v === "en" || v === "el") cur = v; } catch(e){}
+  try { const q = new URLSearchParams(location.search).get("lang"); if (q === "en" || q === "el") cur = q; } catch(e){}
 
   const cbs = [];
   let nodes = [];            // {n, html}
