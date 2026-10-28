@@ -105,15 +105,16 @@ code{font-family:var(--f-mono); font-size:.86em; background:var(--surface-2);
 @media(max-width:720px){.tb-nav a:nth-child(n+5){display:none}}
 
 /* ---------- hero ---------- */
-.hero{padding-block:64px 0; border-top:0}
+.hero{padding-block:clamp(28px,6vh,64px) 0; border-top:0}
 .hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:52px; align-items:end}
 @media(max-width:900px){.hero-grid{grid-template-columns:1fr; gap:36px; align-items:start}}
-h1{font-size:clamp(30px,4.6vw,50px); line-height:1.1; letter-spacing:-.025em; font-weight:600}
+h1{font-size:clamp(30px,min(4.6vw,6.4vh),50px); line-height:1.1; letter-spacing:-.025em; font-weight:600}
 .h1-en{font-family:var(--f-ui); font-size:15px; font-weight:400; color:var(--ink-3); line-height:1.45; max-width:44ch}
 .byline{display:flex; flex-wrap:wrap; gap:12px 28px; font-family:var(--f-ui); font-size:13.5px; color:var(--ink-2)}
 .byline b{display:block; font-size:11px; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
 .hero-fig{margin:0}
 .hero-fig img{width:100%; height:auto; border-radius:3px; box-shadow:var(--shadow)}
+@media(min-width:901px){.hero-fig img{max-height:min(76vh,780px); object-fit:cover; object-position:center 32%}}
 figcaption{font-family:var(--f-ui); font-size:13px; line-height:1.5; color:var(--ink-2); margin-top:10px}
 
 /* ---------- key figures strip ---------- */
@@ -308,6 +309,7 @@ html.js-reveal .reveal.in{opacity:1; transform:none}
 .fstep:not(:last-child)::after{content:"\203A"; position:absolute; inset-inline-end:-8px; top:50%; transform:translateY(-50%);
   width:15px; height:15px; line-height:13px; text-align:center; font-family:var(--f-mono); font-size:12px; color:var(--ink-2);
   background:var(--surface); border:1px solid var(--rule); border-radius:50%; z-index:2}
+@media(max-width:1560px) and (min-width:1101px){.flow{grid-template-columns:repeat(5,minmax(0,1fr))} .fstep:nth-child(5n)::after{display:none} .fstep{border-radius:0 !important} .fstep:last-child{grid-column:span 2}}
 @media(max-width:1100px){.flow{grid-template-columns:repeat(3,minmax(0,1fr))} .fstep:not(:last-child)::after{display:none} .fstep{border-radius:0 !important}}
 @media(max-width:560px){.flow{grid-template-columns:1fr}}
 .cv{display:grid; gap:22px; margin:4px 0 6px}
