@@ -278,6 +278,24 @@ svg.chart text.lbl{font-family:var(--f-ui); font-size:11px; fill:var(--ink-2)}
 
 /* ---------- misc blocks ---------- */
 .callout{border-inline-start:2px solid var(--accent); padding:2px 0 2px 18px; margin-block:4px}
+.how{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:26px}
+@media(max-width:900px){.how{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.how{grid-template-columns:1fr}}
+.how-card{position:relative; background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:22px 20px 18px; display:flex; flex-direction:column; gap:8px}
+.how-card .bar{position:absolute; inset-inline:-1px; top:-1px; height:3px; border-radius:6px 6px 0 0; background:var(--signal)}
+.how-card.is-hw .bar{background:var(--accent)} .how-card.is-bio .bar{background:var(--ink-3)}
+.how-card .n-i{font-family:var(--f-mono); font-size:10.5px; letter-spacing:.08em; color:var(--ink-3)}
+.how-card h4{font-family:var(--f-ui); font-size:17px; font-weight:600; letter-spacing:-.01em}
+.how-card p{font-family:var(--f-ui); font-size:14px; line-height:1.55; color:var(--ink-2)}
+.how-card .spec{font-family:var(--f-mono); font-size:11px; line-height:1.6; color:var(--ink-3); margin-top:auto; padding-top:6px; border-top:1px dashed var(--rule)}
+@media(min-width:901px){.how-card:not(:last-child)::after{content:"\2192"; position:absolute; inset-inline-end:-21px; top:50%; transform:translateY(-50%);
+  font-family:var(--f-mono); font-size:15px; color:var(--ink-3)}}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+html.js-reveal .reveal{opacity:0; transform:translateY(16px);
+  transition:opacity .8s cubic-bezier(.2,.65,.25,1), transform .8s cubic-bezier(.2,.65,.25,1); transition-delay:var(--d,0ms)}
+html.js-reveal .reveal.in{opacity:1; transform:none}
+@media(prefers-reduced-motion:reduce){html.js-reveal .reveal{opacity:1; transform:none; transition:none}}
+@media print{html.js-reveal .reveal{opacity:1; transform:none}}
 .flow{display:grid; grid-template-columns:repeat(9,minmax(0,1fr)); gap:1px; background:var(--rule); border:1px solid var(--rule); border-radius:4px}
 .fstep{background:var(--surface); padding:16px 12px 14px; display:flex; flex-direction:column; gap:6px; position:relative}
 .fstep:first-child{border-radius:4px 0 0 4px} .fstep:last-child{border-radius:0 4px 4px 0}
@@ -333,7 +351,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
     <div class="tb-mark">InMoov<span>·</span>BCI</div>
     <nav class="tb-nav">
       <a href="#erotima">Το ερώτημα</a>
-      <a href="#alysida">Η αλυσίδα</a>
+      <a href="#alysida">Πώς δουλεύει</a>
       <a href="#peirama">Το πείραμα</a>
       <a href="#demo">Demo</a>
       <a href="#apotelesmata">Αποτελέσματα</a>
@@ -396,43 +414,18 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
 </section>
 
 <section id="alysida" class="wrap">
-  <div class="sec-head"><span class="sec-num">02</span><h2>Η αλυσίδα σήματος</h2></div>
-  <p class="lede read" style="margin:14px 0 30px">Έξι στάδια χωρίζουν έναν εγκεφαλικό ρυθμό από την περιστροφή ενός σερβοκινητήρα. Οι κόκκινοι δείκτες σημαίνουν υλικό, οι γαλάζιοι λογισμικό.</p>
-  <div class="chain">
-    <div class="node is-hw"><i class="bar"></i>
-      <div class="n-i">ΠΗΓΗ</div><h4>Αισθητικοκινητικός φλοιός</h4>
-      <p>Η νοερή κίνηση του δεξιού χεριού αποδυναμώνει τον ρυθμό μ πάνω από το αντίθετο ημισφαίριο. Το φαινόμενο λέγεται αποσυγχρονισμός σχετιζόμενος με γεγονός.</p>
-      <div class="spec">ERD · 8&#8211;13 Hz · C3 έναντι C4</div>
-    </div>
-    <div class="node is-hw"><i class="bar"></i>
-      <div class="n-i">ΚΑΤΑΓΡΑΦΗ</div><h4>OpenBCI Cyton</h4>
-      <p>Οκτώ ηλεκτρόδια στην κεντρική και κεντρομετωπιαία ζώνη κατά το σύστημα 10&#8211;20, με ενισχυτή ADS1299 και συγχρονισμένους markers μέσω Lab Streaming Layer.</p>
-      <div class="spec">250 Hz · 24-bit · C3 C4 FC3 FC4 CP3 CP4 Cz FCz</div>
-    </div>
-    <div class="node"><i class="bar"></i>
-      <div class="n-i">ΚΑΘΑΡΙΣΜΟΣ</div><h4>Προεπεξεργασία</h4>
-      <p>Ζωνοπερατό φίλτρο, αποκοπή των 50 Hz του δικτύου, κοινή μέση αναφορά για να φύγει ό,τι είναι κοινό σε όλα τα κανάλια, και απόρριψη εποχών με ακραία πλάτη.</p>
-      <div class="spec">1&#8211;40 Hz FIR · notch 50 Hz · CAR · κατώφλι 200 µV</div>
-    </div>
-    <div class="node"><i class="bar"></i>
-      <div class="n-i">ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ</div><h4>Κοινά χωρικά πρότυπα</h4>
-      <p>Το CSP βρίσκει τους χωρικούς συνδυασμούς καναλιών που μεγιστοποιούν τη διαφορά ισχύος ανάμεσα στις δύο κλάσεις. Η κανονικοποίηση Ledoit-Wolf το σταθεροποιεί στα λίγα κανάλια.</p>
-      <div class="spec">8&#8211;30 Hz · 4 συνιστώσες · Ledoit-Wolf</div>
-    </div>
-    <div class="node"><i class="bar"></i>
-      <div class="n-i">ΑΠΟΦΑΣΗ</div><h4>Ταξινομητής</h4>
-      <p>Τέσσερις ταξινομητές αξιολογήθηκαν συγκριτικά και απέδωσαν ουσιαστικά το ίδιο. Ο γραμμικός διαχωριστής Fisher χρησιμοποιείται στο demo ως ο απλούστερος από αυτούς.</p>
-      <div class="spec">LDA · SVM-RBF · SVM γραμμικό · Riemannian MDM</div>
-    </div>
-    <div class="node is-hw"><i class="bar"></i>
-      <div class="n-i">ΕΝΕΡΓΟΠΟΙΗΣΗ</div><h4>Arduino και σερβοκινητήρες</h4>
-      <p>Δύο εντολές ταξιδεύουν στη σειριακή θύρα. Ο οδηγός PCA9685 μεταφράζει την απόφαση σε παλμούς για πέντε σερβοκινητήρες, που τραβούν τους τένοντες των δαχτύλων.</p>
-      <div class="spec">9600 baud · I²C · min = κλείσιμο · mid = άνοιγμα</div>
-    </div>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Πώς δουλεύει το σύστημα</h2></div>
+  <p class="lede read" style="margin:14px 0 30px">Ο συμμετέχων δεν κουνάει το χέρι του, απλώς φαντάζεται ότι το κλείνει. Αυτό αφήνει ένα μικρό αλλά μετρήσιμο ίχνος στο EEG. Το σύστημα το ανιχνεύει και το μετατρέπει σε εντολή για το ρομποτικό χέρι, σε τέσσερα βήματα.</p>
+  <div class="how">
+    <div class="how-card is-bio"><i class="bar"></i><div class="n-i">ΒΗΜΑ 1 · ΕΓΚΕΦΑΛΟΣ</div><h4>Νοερή κίνηση</h4><p>Όταν φαντάζεσαι μια κίνηση του δεξιού χεριού χωρίς να την κάνεις, ο ρυθμός μ (8–13 Hz) πάνω από τον αριστερό κινητικό φλοιό εξασθενεί. Το φαινόμενο λέγεται αποσυγχρονισμός σχετιζόμενος με γεγονός (ERD) και είναι το σήμα που ψάχνει όλο το σύστημα.</p><div class="spec">ERD · 8–13 Hz · C3 έναντι C4</div></div>
+    <div class="how-card is-hw"><i class="bar"></i><div class="n-i">ΒΗΜΑ 2 · ΚΑΤΑΓΡΑΦΗ</div><h4>EEG οκτώ καναλιών</h4><p>Οκτώ ηλεκτρόδια πάνω από τον κινητικό φλοιό καταγράφουν το σήμα με το OpenBCI Cyton. Κάθε οδηγία στην οθόνη σημειώνεται στον χρόνο μέσω Lab Streaming Layer, ώστε να ξέρουμε τι ζητήθηκε σε κάθε στιγμή.</p><div class="spec">250 Hz · 24-bit ADS1299 · C3 C4 FC3 FC4 CP3 CP4 Cz FCz</div></div>
+    <div class="how-card"><i class="bar"></i><div class="n-i">ΒΗΜΑ 3 · ΑΠΟΚΩΔΙΚΟΠΟΙΗΣΗ</div><h4>Καθαρισμός και ταξινόμηση</h4><p>Το σήμα καθαρίζεται από θόρυβο, το CSP βρίσκει τους συνδυασμούς καναλιών που ξεχωρίζουν καλύτερα τις δύο καταστάσεις, και ένας γραμμικός ταξινομητής αποφασίζει: νοερή κίνηση ή ηρεμία. Αναλυτικά, βήμα βήμα, παρακάτω.</p><div class="spec">Python · MNE · CSP + LDA</div></div>
+    <div class="how-card is-hw"><i class="bar"></i><div class="n-i">ΒΗΜΑ 4 · ΕΝΕΡΓΟΠΟΙΗΣΗ</div><h4>Ρομποτικό χέρι</h4><p>Η απόφαση φεύγει από τη σειριακή θύρα. Ένα Arduino με οδηγό PCA9685 κινεί πέντε σερβοκινητήρες που τραβούν τους τένοντες: η νοερή κίνηση κλείνει το χέρι, η ηρεμία το ανοίγει.</p><div class="spec">9600 baud · I²C · min = κλείσιμο · mid = άνοιγμα</div></div>
   </div>
+  <p class="note" style="margin-top:14px">Κόκκινο: υλικό. Γαλάζιο: λογισμικό.</p>
   <p class="note" style="margin-top:18px; max-width:78ch">Στη ζωντανή λειτουργία το παράθυρο ανάλυσης του ενός δευτερολέπτου ολισθαίνει ανά 125 ms, και η εντολή φεύγει μόνο όταν συμφωνούν τουλάχιστον πέντε από τις επτά τελευταίες αποφάσεις. Μαζί με τον χρόνο που χρειάζεται το παράθυρο για να γεμίσει με φρέσκο σήμα, από την αλλαγή κατάστασης ως την κίνηση μεσολαβεί περίπου ένα με ενάμισι δευτερόλεπτο.</p>
   <div class="stack s-16" style="margin-top:46px">
-    <h3>Ο καθαρισμός και η απόφαση, βήμα βήμα</h3>
+    <h3>Από μέσα: ο καθαρισμός και η απόφαση, βήμα βήμα</h3>
     <p class="note" style="max-width:82ch">Τι παθαίνει το σήμα από τη στιγμή που φεύγει από το κεφάλι μέχρι να γίνει εντολή στο χέρι. Τα βήματα 1 έως 5 καθαρίζουν το σήμα, με τη σειρά που εφαρμόζονται.</p>
     <div class="flow">
       <div class="fstep g-src"><i class="bar"></i><div class="n-i">ΠΗΓΗ</div><h4>Ακατέργαστο EEG</h4><p>8 κανάλια στα 250 Hz. Εδώ τρέχει ο έλεγχος ποιότητας της ενότητας 07, πριν από κάθε φίλτρο.</p><div class="spec">8 × 250 Hz</div></div>
@@ -814,7 +807,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
   <div class="sec-head"><span class="sec-num">09</span><h2>Τι δείχνει η εργασία</h2></div>
   <ol class="findings read" style="margin-top:26px">
     <li><div>
-      <h4>Η αλυσίδα δουλεύει με υλικό κάτω από 1.500 €</h4>
+      <h4>Το σύστημα δουλεύει με υλικό κάτω από 1.500 €</h4>
       <p>Σε δεδομένα που ο ταξινομητής δεν είχε ξαναδεί, το σύστημα εκτέλεσε σωστά το 72,5% των εντολών για τον καλύτερο συμμετέχοντα. Το φαινόμενο είναι στατιστικά σημαντικό σε επίπεδο ομάδας ακόμη και με το αυστηρό σχήμα αξιολόγησης. Τα ερευνητικά συστήματα που χρησιμοποιούνται συνήθως για το ίδιο έργο κοστίζουν πάνω από 20.000 €.</p>
     </div></li>
     <li><div>
@@ -2862,4 +2855,52 @@ const HAND = (function(){
 })();
 
 I18N.init();
+
+/* ══════════════ gentle reveal on scroll ══════════════
+   Content fades and rises a few pixels as it enters the view. Nothing is
+   hidden without JavaScript or IntersectionObserver, nothing moves for readers
+   who ask for reduced motion, and a staggered row never waits more than 0.4 s. */
+(function(){
+  if (!("IntersectionObserver" in window)) return;
+  try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch(e){}
+  const SEL = ["section .sec-head", "section > .lede", ".how-card", ".fstep", ".kpi",
+               "section .chart-card", "section .callout", ".findings li", ".photos figure",
+               ".tablewrap", ".deflist", "section .grid-2 > .stack", "section .grid-2 > .read"];
+  const els = [];
+  document.querySelectorAll(SEL.join(",")).forEach(function(el){
+    if (el.closest(".hero") || el.closest(".rig") || el.closest(".reveal")) return;
+    els.push(el);
+  });
+  if (!els.length) return;
+  const groups = new Map();
+  els.forEach(function(el){
+    el.classList.add("reveal");
+    const p = el.parentElement, i = groups.get(p) || 0;
+    if (/how-card|fstep|kpi/.test(el.className) || el.tagName === "LI")
+      el.style.setProperty("--d", Math.min(i * 70, 400) + "ms");
+    groups.set(p, i + 1);
+  });
+  document.documentElement.classList.add("js-reveal");
+  const io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, {rootMargin: "0px 0px -8% 0px", threshold: 0.08});
+  els.forEach(function(el){ io.observe(el); });
+  /* a jump through the menu can skip past content without it ever entering
+     the view; reveal anything that is already above the fold */
+  let ticking = false;
+  window.addEventListener("scroll", function(){
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(function(){
+      ticking = false;
+      const lim = window.innerHeight;
+      els.forEach(function(el){
+        if (!el.classList.contains("in") && el.getBoundingClientRect().top < lim){
+          el.classList.add("in"); io.unobserve(el);
+        }
+      });
+    });
+  }, {passive: true});
+})();
 </script>
