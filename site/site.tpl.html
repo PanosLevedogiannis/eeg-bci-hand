@@ -433,7 +433,7 @@ footer{border-top:1px solid var(--rule); padding-block:40px 60px; font-family:va
   <p class="note" style="margin-top:18px; max-width:78ch">Στη ζωντανή λειτουργία το παράθυρο ανάλυσης του ενός δευτερολέπτου ολισθαίνει ανά 125 ms, και η εντολή φεύγει μόνο όταν συμφωνούν τουλάχιστον πέντε από τις επτά τελευταίες αποφάσεις. Μαζί με τον χρόνο που χρειάζεται το παράθυρο για να γεμίσει με φρέσκο σήμα, από την αλλαγή κατάστασης ως την κίνηση μεσολαβεί περίπου ένα με ενάμισι δευτερόλεπτο.</p>
   <div class="stack s-16" style="margin-top:46px">
     <h3>Ο καθαρισμός και η απόφαση, βήμα βήμα</h3>
-    <p class="note" style="max-width:82ch">Τι παθαίνει το σήμα από τη στιγμή που φεύγει από το κεφάλι μέχρι να γίνει εντολή στο χέρι. Τα βήματα 1 έως 5 είναι τα φίλτρα, με τη σειρά που εφαρμόζονται.</p>
+    <p class="note" style="max-width:82ch">Τι παθαίνει το σήμα από τη στιγμή που φεύγει από το κεφάλι μέχρι να γίνει εντολή στο χέρι. Τα βήματα 1 έως 5 καθαρίζουν το σήμα, με τη σειρά που εφαρμόζονται.</p>
     <div class="flow">
       <div class="fstep g-src"><i class="bar"></i><div class="n-i">ΠΗΓΗ</div><h4>Ακατέργαστο EEG</h4><p>8 κανάλια στα 250 Hz. Εδώ τρέχει ο έλεγχος ποιότητας της ενότητας 07, πριν από κάθε φίλτρο.</p><div class="spec">8 × 250 Hz</div></div>
       <div class="fstep g-cln"><i class="bar"></i><div class="n-i">ΚΑΘΑΡΙΣΜΟΣ · 1</div><h4>Ζωνοπερατό</h4><p>Κόβει την αργή μετατόπιση και τον θόρυβο από τους μύες.</p><div class="spec">1–40 Hz FIR</div></div>
@@ -2457,7 +2457,7 @@ const HAND = (function(){
   })(last);
 
   I18N.on(function(){
-    if (!S.live){ paintModelTexts(); return; }
+    if (!S.live){ if (S.offline) paintModelTexts(); return; }
     buildPicker();
     document.querySelectorAll("#subj-pick .subj").forEach(function(b){
       b.setAttribute("aria-pressed", b.dataset.subj === S.key ? "true" : "false");
@@ -2587,10 +2587,12 @@ const HAND = (function(){
     buildPicker();
     sizeScope();
     selectSubject("S11");
+    setPlaying(S.playing);
     if (SYNC && DEMO[SYNC.subject]) stageSeg.hidden = false;
   }
   function replayUnavailable(){
     S.live = false;
+    S.offline = true;
     document.getElementById("replay-live").hidden = true;
     document.getElementById("replay-offline").hidden = false;
     ["subj-pick","subj-label","btn-play","btn-next","btn-reset","speed-seg","speed-label"]

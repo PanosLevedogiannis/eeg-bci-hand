@@ -238,7 +238,6 @@
   "Η εντολή φεύγει μόνο αν συμφωνούν οι 5 από τις 7 τελευταίες αποφάσεις.": "A command is sent only if 5 of the last 7 decisions agree.",
   "min = κλείσιμο · mid = άνοιγμα": "min = close · mid = open",
   "Ο καθαρισμός και η απόφαση, βήμα βήμα": "Cleaning and decision, step by step",
-  "Τι παθαίνει το σήμα από τη στιγμή που φεύγει από το κεφάλι μέχρι να γίνει εντολή στο χέρι. Τα βήματα 1 έως 5 είναι τα φίλτρα, με τη σειρά που εφαρμόζονται.": "What happens to the signal from the moment it leaves the scalp until it becomes a command to the hand. Steps 1 to 5 are the filters, in the order they are applied.",
   "Δύο τρόποι να χωρίσεις τα ίδια δεδομένα": "Two ways to split the same data",
   "Κάθε τετράγωνο είναι τέσσερις δοκιμές ενός συμμετέχοντα. Γκρι: εκπαίδευση. Κόκκινο: έλεγχος.": "Each square is four trials of one participant. Grey: training. Red: test.",
   "Οι δοκιμές ανακατεύονται. Το κομμάτι ελέγχου έρχεται από όλα τα runs, οπότε ο ταξινομητής έχει ήδη δει κάθε run.": "Trials are shuffled. The test part comes from every run, so the classifier has already seen each run.",
@@ -246,7 +245,8 @@
   "Ένα ολόκληρο run μένει έξω και ο ταξινομητής κρίνεται σε καταγραφή που δεν έχει δει ποτέ, όπως στην πραγματική χρήση. Επαναλαμβάνεται τέσσερις φορές, μία για κάθε run.": "A whole run is held out and the classifier is judged on a recording it has never seen, as in real use. Repeated four times, once per run.",
   "Μόνο 6 από τους 14 γενικεύουν": "Only 6 of 14 generalize",
   "<i class=\"cv-sw\"></i>εκπαίδευση": "<i class=\"cv-sw\"></i>training",
-  "<i class=\"cv-sw x\"></i>έλεγχος": "<i class=\"cv-sw x\"></i>test"
+  "<i class=\"cv-sw x\"></i>έλεγχος": "<i class=\"cv-sw x\"></i>test",
+  "Τι παθαίνει το σήμα από τη στιγμή που φεύγει από το κεφάλι μέχρι να γίνει εντολή στο χέρι. Τα βήματα 1 έως 5 καθαρίζουν το σήμα, με τη σειρά που εφαρμόζονται.": "What happens to the signal from the moment it leaves the scalp until it becomes a command to the hand. Steps 1 to 5 clean the signal, in the order they are applied."
  },
  "js": {
   "doc.title": "InMoov hand through EEG",
