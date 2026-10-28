@@ -14,7 +14,7 @@
   --panel:#0D1315; --panel-2:#151E20; --panel-ink:#E8EFEE; --panel-ink-2:#93A3A4;
   --panel-rule:#263234; --panel-accent:#E8574A; --panel-signal:#43B8C2;
   --shadow:0 1px 2px rgba(17,24,25,.05),0 8px 24px -12px rgba(17,24,25,.18);
-  --maxw:1160px; --read:70ch;
+  --maxw:1440px; --read:70ch;
   --f-display:"Literata",Georgia,"Times New Roman",serif;
   --f-ui:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
@@ -59,7 +59,7 @@ h1,h2,h3,h4{text-wrap:balance; margin:0; font-weight:600; line-height:1.18}
 p{margin:0}
 
 /* ---------- layout primitives ---------- */
-.wrap{max-width:var(--maxw); margin-inline:auto; padding-inline:24px}
+.wrap{max-width:var(--maxw); margin-inline:auto; padding-inline:clamp(24px,4vw,56px)}
 .read{max-width:var(--read)}
 .stack{display:flex; flex-direction:column}
 .s-8{gap:8px} .s-12{gap:12px} .s-16{gap:16px} .s-20{gap:20px} .s-24{gap:24px} .s-32{gap:32px} .s-40{gap:40px}
@@ -92,7 +92,7 @@ code{font-family:var(--f-mono); font-size:.86em; background:var(--surface-2);
   background:color-mix(in srgb,var(--paper) 88%,transparent);
   backdrop-filter:saturate(1.5) blur(10px); border-bottom:1px solid var(--rule);
 }
-.topbar-in{max-width:var(--maxw); margin-inline:auto; padding:0 24px; height:52px;
+.topbar-in{max-width:var(--maxw); margin-inline:auto; padding:0 clamp(24px,4vw,56px); height:52px;
   display:flex; align-items:center; gap:26px}
 .tb-mark{font-family:var(--f-mono); font-size:12px; font-weight:700; letter-spacing:.06em; white-space:nowrap}
 .tb-mark span{color:var(--accent)}
@@ -315,7 +315,7 @@ html.js-reveal .reveal.in{opacity:1; transform:none}
 @media(max-width:760px){.cv-row{grid-template-columns:1fr}}
 .cv-name{font-family:var(--f-ui); font-size:14px; font-weight:600; color:var(--ink); margin-bottom:4px}
 .cv-res{font-family:var(--f-ui); font-size:12.5px; font-weight:600; color:var(--accent); margin-top:6px}
-.cv-runs{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+.cv-runs{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; max-width:860px}
 .cv-run .t{display:block; font-family:var(--f-mono); font-size:10.5px; color:var(--ink-3); margin-bottom:5px}
 .cv-cells{display:grid; grid-template-columns:repeat(5,1fr); gap:3px}
 .cv-cells i{display:block; aspect-ratio:1; background:var(--rule); border-radius:2px}
